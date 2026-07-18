@@ -26,11 +26,12 @@
 --txt:#e8e8f0;--txs:#8888a0;--acc:#5baaff;--acs:#5baaff22;
 --bor:#2a2a40;--shd:0 2px 12px rgba(0,0,0,.3)
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;height:100dvh;width:100vw;position:fixed;user-select:none;-webkit-user-select:none}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;height:100dvh;width:100vw;margin:0;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
 
 /* HEADER */
 #hdr{position:fixed;top:0;left:0;right:0;height:calc(var(--hdrh)+var(--st));padding-top:var(--st);background:var(--bgh);display:flex;align-items:center;justify-content:space-between;padding-left:16px;padding-right:16px;z-index:100;transition:transform .3s}
 #hdr.hide{transform:translateY(-100%)}
+.hdr-spacer{height:calc(var(--hdrh)+var(--st));flex-shrink:0}
 .hdr-logo{font-size:15px;font-weight:700;color:var(--txh);letter-spacing:.5px}
 .hdr-logo b{color:var(--acc)}
 .hdr-r{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--txh);opacity:.85;font-variant-numeric:tabular-nums}
@@ -45,13 +46,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .upd-btn{background:rgba(255,255,255,.25);border:none;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 
 /* MAIN */
-#main{position:fixed;top:calc(var(--hdrh)+var(--st));bottom:calc(var(--navh)+var(--sb));left:0;right:0;overflow:hidden}
-.pg{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;display:none;-webkit-overflow-scrolling:touch}
+#main{flex:1;overflow:hidden;position:relative}
+.pg{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;display:none}
 .pg.act{display:flex;flex-direction:column}
 
 /* NAV */
 #nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--navh)+var(--sb));padding-bottom:var(--sb);background:var(--bgn);border-top:1px solid var(--bor);display:flex;align-items:center;justify-content:space-around;z-index:100;transition:transform .3s}
 #nav.hide{transform:translateY(100%)}
+.nav-spacer{height:calc(var(--navh)+var(--sb));flex-shrink:0}
 .nb{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--txs);font-size:10px;font-weight:500;cursor:pointer;padding:8px 16px;border-radius:12px;font-family:inherit}
 .nb.act{color:var(--acc)}
 .nb svg{width:24px;height:24px}
@@ -213,6 +215,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <span id="batPc">--%</span>
   </div>
 </header>
+<div class="hdr-spacer"></div>
 
 <!-- UPDATE BANNER -->
 <div class="upd-banner" id="updBanner">
@@ -270,7 +273,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="ssec">Stockage</div>
       <div class="sr" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="slb">&#x1F4BE; Espace utilis&#233;</span><span class="sv" id="stInfo">Calcul...</span></div><div class="stbar"><div class="stfl" id="stFl" style="width:0%"></div></div></div>
       <div class="ssec">&#192; propos</div>
-      <div class="sr"><span class="slb">HOME READER</span><span class="sv" id="verLbl">v1.2.0</span></div>
+      <div class="sr"><span class="slb">HOME READER</span><span class="sv" id="verLbl">v1.2.1</span></div>
       <div class="sr"><span class="slb">Formats support&#233;s</span><span class="sv">CBZ, CBR, CB7, PDF, EPUB</span></div>
     </div>
   </div>
@@ -282,6 +285,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   <button class="nb" data-p="pgColl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>Collections</button>
   <button class="nb" data-p="pgSet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Param&#232;tres</button>
 </nav>
+<div class="nav-spacer"></div>
 
 <button class="fab" id="fabBtn">+</button>
 <div class="mbar" id="mBar"><span id="mCnt">0</span><div style="display:flex;gap:8px"><button class="mb mb-c" id="mNo">Annuler</button><button class="mb mb-d" id="mDel">Supprimer</button></div></div>
@@ -331,7 +335,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 <script>
 /* HOME READER v1.2.0 */
-var VER = '1.2.0';
+var VER = '1.2.1';
 if (typeof pdfjsLib !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
