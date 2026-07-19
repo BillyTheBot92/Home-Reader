@@ -832,7 +832,7 @@ function openReader(bookId){
       $('readerView').classList.add('active');$('appHeader').classList.add('hidden');$('bottomNav').classList.add('hidden');$('fabAdd').style.display='none';
       hideLd();renderPage();initRTouch()
     })
-  }).catch(function(err){hideLd();console.error(err);toast('Erreur de lecture')})
+  }).catch(function(err){hideLd();console.error('[HR] Read error:',err);toast('Erreur: '+(err&&err.message?err.message:String(err)))})
 }
 
 function renderPage(){
