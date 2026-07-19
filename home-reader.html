@@ -297,6 +297,11 @@ body {
 .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 14px; }
+.load-progress { width: 80%; max-width: 280px; display: flex; align-items: center; gap: 10px; }
+.load-progress-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.2); overflow: hidden; }
+.load-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; width: 0%; }
+.load-progress-pct { font-size: 12px; color: rgba(255,255,255,0.7); min-width: 35px; }
+.load-cancel { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 8px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 4px; }
 
 /* === COLLECTIONS === */
 .coll-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; align-content: start; }
@@ -512,6 +517,7 @@ body {
       <div class="settings-section">&#192; propos</div>
       <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.4.0</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
+      <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
       <div class="setting-row"><button class="setting-btn" id="refreshBtn">&#x1F503; Actualiser la biblioth&#232;que</button></div>
     </div>
@@ -536,7 +542,15 @@ body {
   <button class="cat-option" data-cat="Autres"><span class="cat-icon">&#x1F4D7;</span><div><div>Autres</div><div class="cat-desc">Livre, roman graphique...</div></div></button>
 </div><div class="modal-btns"><button class="modal-btn secondary" id="importCancel">Annuler</button><button class="modal-btn primary" id="importConfirm" disabled>Importer</button></div></div></div>
 
-<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><span class="loading-text" id="loadingText">Chargement...</span></div>
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner" id="loadingSpinner"></div>
+  <span class="loading-text" id="loadingText">Chargement...</span>
+  <div class="load-progress" id="loadProgress" style="display:none">
+    <div class="load-progress-bar"><div class="load-progress-fill" id="loadProgressFill"></div></div>
+    <span class="load-progress-pct" id="loadProgressPct">0%</span>
+  </div>
+  <button class="load-cancel" id="loadCancel" style="display:none">Annuler</button>
+</div>
 <div class="book-detail-overlay" id="bookDetailOverlay"><div class="book-detail" id="bookDetail"></div></div>
 <div class="modal-overlay" id="confirmOverlay"><div class="modal" id="confirmBox"></div></div>
 <div class="modal-overlay" id="assignOverlay"><div class="modal" id="assignBox"></div></div>
@@ -573,9 +587,10 @@ body {
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept=".cbz,.cbr,.pdf,.epub,.cb7" multiple style="display:none">
 
+<script src="libarchive.js"></script>
 <script>
 /* HOME READER v1.3.0 */
-var VER='1.4.0';
+var VER='1.5.0';
 if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 var S={db:null,books:[],colls:[],filter:'all',sort:'recent',search:'',selMode:false,selIds:new Set(),pFiles:null,pCat:null,
@@ -596,15 +611,21 @@ function pad(v){return v<10?'0'+v:''+v}
 function uClock(){}
 function uBat(){}
 
-/* LIBARCHIVE */
+/* LIBARCHIVE - LOCAL (no CDN) */
 function initArch(){
-  import('https://cdn.jsdelivr.net/npm/libarchive.js@1.3.0/main.js').then(function(mod){
-    return fetch('https://cdn.jsdelivr.net/npm/libarchive.js@1.3.0/dist/worker-bundle.js').then(function(r){return r.text()}).then(function(txt){
-      var blob=new Blob([txt],{type:'application/javascript'});
-      mod.Archive.init({workerUrl:URL.createObjectURL(blob)});
-      S.Arch=mod.Archive;S.archReady=true;console.log('[HR] libarchive OK')
-    })
-  }).catch(function(e){console.warn('[HR] libarchive fail:',e)})
+  try{
+    window.LibArchive.init({getWorker:function(){return new Worker('libarchive-worker.js')}});
+    S.Arch=window.LibArchive;S.archReady=true;S.archFailed=false;
+    console.log('[HR] libarchive LOCAL ready');updCbrStatus();
+  }catch(e){
+    S.archFailed=true;console.warn('[HR] libarchive init fail:',e);updCbrStatus();
+  }
+}
+function updCbrStatus(){
+  var el=$('cbrStatus');
+  if(S.archReady)el.textContent='\u2705 Disponible';
+  else if(S.archFailed)el.textContent='\u274C Non disponible';
+  else el.textContent='\u23F3 Chargement...';
 }
 
 /* DB */
@@ -627,19 +648,43 @@ function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then
 function parseEPUBCover(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});var cv=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];if(!cv)return{cover:null,total:Math.max(imgs.length,1)};return cv.entry.async('blob').then(function(bl){return{cover:bl,total:Math.max(imgs.length,1)}})})}
 function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});imgs.sort(function(a,b){return a.path.localeCompare(b.path)});var chain=Promise.resolve([]);imgs.forEach(function(f){chain=chain.then(function(pages){return f.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain})}
 
-/* CBR/CB7 CONVERSION */
-function convertArch(buf,fname){
-  if(!S.archReady||!S.Arch)return Promise.reject(new Error('Lib non chargee'));
+/* CBR/CB7 EXTRACTION (direct images, no re-zip) */
+var cancelRequested=false;
+function extractCBR(buf,fname,onProgress){
+  if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non disponible'));
+  cancelRequested=false;
   var file=new File([buf],fname);
-  return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
-    var images=[];
-    function walk(obj,path){Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val instanceof File){if(isImg(name))images.push({path:full,file:val})}else if(val&&typeof val==='object')walk(val,full)})}
-    walk(extracted,'');
-    if(!images.length)throw new Error('Aucune image');
-    images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
-    var zip=new JSZip();var chain=Promise.resolve();
-    images.forEach(function(img,i){chain=chain.then(function(){return img.file.arrayBuffer().then(function(ab){zip.file('page_'+String(i).padStart(4,'0')+'.'+img.path.split('.').pop(),ab)})})});
-    return chain.then(function(){return zip.generateAsync({type:'arraybuffer',compression:'STORE'})}).then(function(cbzBuf){return{buffer:cbzBuf,cover:images[0].file.slice(0,images[0].file.size,images[0].file.type),total:images.length}})
+  return new Promise(function(resolve,reject){
+    var timer=setTimeout(function(){reject(new Error('Timeout (60s)'))},60000);
+    S.Arch.open(file).then(function(archive){
+      return archive.extractFiles()
+    }).then(function(extracted){
+      clearTimeout(timer);
+      if(cancelRequested){reject(new Error('Annul\u00e9'));return}
+      var images=[];
+      function walk(obj,path){Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val instanceof File){if(isImg(name))images.push({path:full,file:val})}else if(val&&typeof val==='object')walk(val,full)})}
+      walk(extracted,'');
+      if(!images.length){reject(new Error('Aucune image trouv\u00e9e'));return}
+      images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
+      // Store images directly as ArrayBuffers (no re-zip)
+      var pageBuffers=[];var done=0;var total=images.length;
+      var chain=Promise.resolve();
+      images.forEach(function(img,i){
+        chain=chain.then(function(){
+          if(cancelRequested)throw new Error('Annul\u00e9');
+          return img.file.arrayBuffer().then(function(ab){
+            pageBuffers.push({data:ab,type:img.file.type||'image/jpeg'});
+            done++;
+            if(onProgress)onProgress(done,total);
+          })
+        })
+      });
+      chain.then(function(){
+        // Get cover from first image
+        var coverBlob=new Blob([pageBuffers[0].data],{type:pageBuffers[0].type});
+        resolve({pages:pageBuffers,cover:coverBlob,total:images.length})
+      }).catch(reject)
+    }).catch(function(e){clearTimeout(timer);reject(e)})
   })
 }
 
@@ -659,9 +704,29 @@ $('importConfirm').addEventListener('click',function(){
       if(ext==='cbz'){coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}})}
       else if(ext==='cbr'||ext==='cb7'){
         coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}}).catch(function(){
-          if(!S.archReady){toast('Conversion non disponible');return null}
-          showLd('Conversion '+ext.toUpperCase()+' \u2192 CBZ...');
-          return convertArch(buffer,file.name).then(function(conv){return{cover:conv.cover,total:conv.total,buf:conv.buffer,st:'cbz'}}).catch(function(e){toast('Impossible de convertir: '+file.name);console.error(e);return null})
+          if(!S.archReady){
+            if(S.archFailed)toast('Module CBR non disponible');
+            else toast('Module CBR en chargement, r\u00e9essayez');
+            return null
+          }
+          // Show progress UI
+          $('loadProgress').style.display='flex';$('loadCancel').style.display='block';
+          $('loadingText').textContent='Extraction '+ext.toUpperCase()+'...';
+          $('loadProgressFill').style.width='0%';$('loadProgressPct').textContent='0%';
+          cancelRequested=false;
+          return extractCBR(buffer,file.name,function(done,total){
+            var pct=Math.round((done/total)*100);
+            $('loadProgressFill').style.width=pct+'%';
+            $('loadProgressPct').textContent=pct+'%';
+            $('loadingText').textContent='Extraction page '+done+'/'+total;
+          }).then(function(result){
+            $('loadProgress').style.display='none';$('loadCancel').style.display='none';
+            return{cover:result.cover,total:result.total,pages:result.pages,st:'images'}
+          }).catch(function(e){
+            $('loadProgress').style.display='none';$('loadCancel').style.display='none';
+            toast(e.message==='Annul\u00e9'?'Import annul\u00e9':'Erreur: '+e.message);
+            console.error(e);return null
+          })
         })
       }else if(ext==='pdf'){coverP=parsePDFCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
       else if(ext==='epub'){coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})}
