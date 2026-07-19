@@ -12,983 +12,733 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{
---bg:#f0f2f5;--bgc:#fff;--bgh:#1a1a2e;--bgn:#fff;
---txt:#1a1a2e;--txs:#6b7280;--txh:#fff;
---acc:#4a9eff;--acs:#4a9eff22;--dan:#ef4444;--bor:#e5e7eb;
---shd:0 2px 12px rgba(0,0,0,.08);--rad:14px;
---navh:64px;--hdrh:44px;--gs:110px;
---st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)
+:root {
+  --bg: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-header: #1a1a2e;
+  --bg-nav: #ffffff;
+  --text: #1a1a2e;
+  --text-sec: #6b7280;
+  --text-header: #ffffff;
+  --accent: #4a9eff;
+  --accent-soft: #4a9eff22;
+  --danger: #ef4444;
+  --favorite: #f59e0b;
+  --border: #e5e7eb;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --radius: 14px;
+  --nav-h: 64px;
+  --header-h: 44px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --grid-size: 110px;
 }
-[data-theme="dark"]{
---bg:#0f0f1a;--bgc:#1a1a2e;--bgh:#12121f;--bgn:#1a1a2e;
---txt:#e8e8f0;--txs:#8888a0;--acc:#5baaff;--acs:#5baaff22;
---bor:#2a2a40;--shd:0 2px 12px rgba(0,0,0,.3)
+[data-theme="dark"] {
+  --bg: #0f0f1a;
+  --bg-card: #1a1a2e;
+  --bg-header: #12121f;
+  --bg-nav: #1a1a2e;
+  --text: #e8e8f0;
+  --text-sec: #8888a0;
+  --accent: #5baaff;
+  --accent-soft: #5baaff22;
+  --border: #2a2a40;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;height:100dvh;width:100vw;margin:0;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
+  position: fixed;
+  top: 0; left: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
-/* HEADER */
-#hdr{position:fixed;top:0;left:0;right:0;height:calc(var(--hdrh)+var(--st));padding-top:var(--st);background:var(--bgh);display:flex;align-items:center;justify-content:space-between;padding-left:16px;padding-right:16px;z-index:100;transition:transform .3s}
-#hdr.hide{transform:translateY(-100%)}
-.hdr-spacer{height:calc(var(--hdrh)+var(--st));flex-shrink:0}
-.hdr-logo{font-size:15px;font-weight:700;color:var(--txh);letter-spacing:.5px}
-.hdr-logo b{color:var(--acc)}
-.hdr-r{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--txh);opacity:.85;font-variant-numeric:tabular-nums}
-.bat-sh{display:inline-block;width:22px;height:11px;border:1.5px solid var(--txh);border-radius:2px;position:relative;vertical-align:middle;opacity:.85}
-.bat-sh::after{content:'';position:absolute;right:-4px;top:2px;width:2px;height:5px;background:var(--txh);border-radius:0 1px 1px 0;opacity:.85}
-.bat-fl{height:100%;background:#4ade80;border-radius:1px;transition:width .5s}
-.bat-fl.lo{background:#ef4444}.bat-fl.mi{background:#f59e0b}
+/* === HEADER === */
+#appHeader {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: calc(var(--header-h) + var(--safe-top));
+  padding-top: var(--safe-top);
+  background: var(--bg-header);
+  display: flex; align-items: center; justify-content: space-between;
+  padding-left: 16px; padding-right: 16px;
+  z-index: 100;
+  transition: transform 0.3s;
+}
+#appHeader.hidden { transform: translateY(-100%); }
+.header-logo { font-size: 15px; font-weight: 700; color: var(--text-header); letter-spacing: 0.5px; }
+.header-logo span { color: var(--accent); }
+.header-right {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--text-header); opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+.battery-shell {
+  display: inline-block; width: 22px; height: 11px;
+  border: 1.5px solid var(--text-header); border-radius: 2px;
+  position: relative; vertical-align: middle; opacity: 0.85;
+}
+.battery-shell::after {
+  content: ''; position: absolute; right: -4px; top: 2px;
+  width: 2px; height: 5px; background: var(--text-header);
+  border-radius: 0 1px 1px 0; opacity: 0.85;
+}
+.battery-fill { height: 100%; background: #4ade80; border-radius: 1px; transition: width 0.5s; }
+.battery-fill.low { background: #ef4444; }
+.battery-fill.mid { background: #f59e0b; }
 
-/* UPDATE BANNER */
-.upd-banner{position:fixed;top:calc(var(--hdrh)+var(--st)+8px);left:16px;right:16px;background:#22c55e;color:#fff;padding:12px 16px;border-radius:12px;display:none;align-items:center;justify-content:space-between;z-index:110;box-shadow:0 4px 16px rgba(0,0,0,.3);font-size:13px;font-weight:600}
-.upd-banner.show{display:flex}
-.upd-btn{background:rgba(255,255,255,.25);border:none;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+/* === UPDATE BANNER === */
+.update-banner {
+  position: fixed;
+  top: calc(var(--header-h) + var(--safe-top) + 8px);
+  left: 16px; right: 16px;
+  background: #22c55e; color: #fff;
+  padding: 12px 16px; border-radius: 12px;
+  display: none; align-items: center; justify-content: space-between;
+  z-index: 110; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  font-size: 13px; font-weight: 600;
+}
+.update-banner.show { display: flex; }
+.update-btn {
+  background: rgba(255,255,255,0.25); border: none; color: #fff;
+  padding: 6px 14px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
 
-/* MAIN */
-#main{flex:1;overflow:hidden;position:relative}
-.pg{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;display:none}
-.pg.act{display:flex;flex-direction:column}
+/* === MAIN AREA === */
+#mainArea {
+  position: fixed;
+  top: calc(var(--header-h) + var(--safe-top));
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  left: 0; right: 0;
+  overflow: hidden;
+}
+.page {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  overflow-y: auto; overflow-x: hidden;
+  display: none;
+  -webkit-overflow-scrolling: touch;
+}
+.page.active { display: flex; flex-direction: column; }
 
-/* NAV */
-#nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--navh)+var(--sb));padding-bottom:var(--sb);background:var(--bgn);border-top:1px solid var(--bor);display:flex;align-items:center;justify-content:space-around;z-index:100;transition:transform .3s}
-#nav.hide{transform:translateY(100%)}
-.nav-spacer{height:calc(var(--navh)+var(--sb));flex-shrink:0}
-.nb{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--txs);font-size:10px;font-weight:500;cursor:pointer;padding:8px 16px;border-radius:12px;font-family:inherit}
-.nb.act{color:var(--acc)}
-.nb svg{width:24px;height:24px}
+/* === BOTTOM NAV === */
+#bottomNav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--bg-nav);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 100;
+  transition: transform 0.3s;
+}
+#bottomNav.hidden { transform: translateY(100%); }
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none; color: var(--text-sec);
+  font-size: 10px; font-weight: 500; cursor: pointer;
+  padding: 8px 16px; border-radius: 12px;
+  transition: all 0.2s; font-family: inherit;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { width: 24px; height: 24px; }
 
-/* LIBRARY */
-.lt{padding:12px 16px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
-.resume{background:linear-gradient(135deg,var(--acc),#7c3aed);border-radius:var(--rad);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border:none;width:100%;text-align:left;font-family:inherit}
-.resume img{width:40px;height:56px;object-fit:cover;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.resume-i{flex:1;color:#fff}
-.resume-t{font-size:13px;font-weight:600}
-.resume-s{font-size:11px;opacity:.8;margin-top:2px}
-.resume-b{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.fbar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.fbar::-webkit-scrollbar{display:none}
-.fb{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--bor);background:var(--bgc);font-size:12px;font-weight:500;color:var(--txs);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
-.fb.act{background:var(--acc);color:#fff;border-color:var(--acc)}
-.sbar{display:flex;gap:8px;align-items:center}
-.sinp{flex:1;padding:9px 14px;border-radius:10px;border:1.5px solid var(--bor);background:var(--bgc);font-size:13px;color:var(--txt);outline:none;font-family:inherit}
-.sinp:focus{border-color:var(--acc)}
-.ssel{padding:9px 10px;border-radius:10px;border:1.5px solid var(--bor);background:var(--bgc);font-size:12px;color:var(--txt);font-family:inherit;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--gs),1fr));gap:12px;padding:0 16px 16px;flex:1;align-content:start}
-.card{position:relative;cursor:pointer;border-radius:var(--rad);overflow:hidden;background:var(--bgc);box-shadow:var(--shd);transition:transform .15s}
-.card:active{transform:scale(.96)}
-.cvw{position:relative;width:100%;padding-top:140%}
-.cv{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#ddd}
-.bdg{position:absolute;top:6px;left:6px;padding:2px 7px;border-radius:6px;font-size:9px;font-weight:600;color:#fff}
-.bdg-n{background:#22c55e}.bdg-r{background:var(--acc)}.bdg-d{background:#8b5cf6}
-.fv{position:absolute;top:6px;right:6px;font-size:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
-.prg{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(0,0,0,.2)}
-.prg-f{height:100%;background:var(--acc);transition:width .3s}
-.cinf{padding:8px 10px}
-.ctit{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ccat{font-size:9px;color:var(--txs);margin-top:2px}
-.chk{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;color:#fff;font-size:14px;z-index:2}
-.card.seling .chk{display:flex}
-.card.seled .chk{background:var(--acc);border-color:var(--acc)}
-.fab{position:fixed;bottom:calc(var(--navh)+var(--sb)+16px);right:16px;width:56px;height:56px;border-radius:50%;background:var(--acc);color:#fff;border:none;font-size:28px;box-shadow:0 4px 16px rgba(74,158,255,.4);cursor:pointer;z-index:50;display:flex;align-items:center;justify-content:center}
-.fab:active{transform:scale(.9)}
-.mbar{position:fixed;bottom:calc(var(--navh)+var(--sb));left:0;right:0;background:var(--bgc);border-top:1px solid var(--bor);padding:12px 16px;display:none;align-items:center;justify-content:space-between;z-index:60}
-.mbar.act{display:flex}
-.mbar span{font-size:13px;font-weight:600}
-.mb{padding:8px 16px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.mb-d{background:var(--dan);color:#fff}.mb-c{background:var(--bor);color:var(--txt)}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px 40px;color:var(--txs);text-align:center}
-.empty svg{width:64px;height:64px;opacity:.3}
-.empty p{font-size:14px}
+/* === LIBRARY === */
+.lib-toolbar { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+.lib-resume {
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; border: none; width: 100%; text-align: left; font-family: inherit;
+}
+.lib-resume img { width: 40px; height: 56px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.lib-resume-info { flex: 1; color: #fff; }
+.lib-resume-title { font-size: 13px; font-weight: 600; }
+.lib-resume-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+.lib-resume-btn {
+  background: rgba(255,255,255,0.2); border: none; color: #fff;
+  padding: 8px 14px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.lib-filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.lib-filters::-webkit-scrollbar { display: none; }
+.filter-btn {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  font-size: 12px; font-weight: 500; color: var(--text-sec);
+  cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap;
+}
+.filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.lib-search { display: flex; gap: 8px; align-items: center; }
+.search-input {
+  flex: 1; padding: 9px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  font-size: 13px; color: var(--text); outline: none; font-family: inherit;
+}
+.search-input:focus { border-color: var(--accent); }
+.sort-select {
+  padding: 9px 10px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  font-size: 12px; color: var(--text); outline: none; font-family: inherit; cursor: pointer;
+}
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--grid-size), 1fr));
+  gap: 12px; padding: 0 16px 16px;
+  flex: 1; align-content: start;
+}
+.book-card {
+  position: relative; cursor: pointer;
+  border-radius: var(--radius); overflow: hidden;
+  background: var(--bg-card); box-shadow: var(--shadow);
+  transition: transform 0.15s;
+}
+.book-card:active { transform: scale(0.96); }
+.book-cover-wrap { position: relative; width: 100%; padding-top: 140%; }
+.book-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; background: #ddd; }
+.book-badge { position: absolute; top: 6px; left: 6px; padding: 2px 7px; border-radius: 6px; font-size: 9px; font-weight: 600; color: #fff; }
+.badge-new { background: #22c55e; }
+.badge-reading { background: var(--accent); }
+.badge-done { background: #8b5cf6; }
+.book-fav { position: absolute; top: 6px; right: 6px; font-size: 16px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+.book-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(0,0,0,0.2); }
+.book-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+.book-info { padding: 8px 10px; }
+.book-title { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.book-cat { font-size: 9px; color: var(--text-sec); margin-top: 2px; }
+.book-select-check {
+  position: absolute; top: 6px; left: 6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid #fff; background: rgba(0,0,0,0.3);
+  display: none; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px; z-index: 2;
+}
+.book-card.selecting .book-select-check { display: flex; }
+.book-card.selected .book-select-check { background: var(--accent); border-color: var(--accent); }
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  right: 16px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  border: none; font-size: 28px;
+  box-shadow: 0 4px 16px rgba(74,158,255,0.4);
+  cursor: pointer; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s;
+}
+.fab:active { transform: scale(0.9); }
+.multi-actions {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  left: 0; right: 0;
+  background: var(--bg-card); border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: none; align-items: center; justify-content: space-between;
+  z-index: 60;
+}
+.multi-actions.active { display: flex; }
+.multi-actions span { font-size: 13px; font-weight: 600; }
+.multi-btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.multi-btn.del { background: var(--danger); color: #fff; }
+.multi-btn.cancel { background: var(--border); color: var(--text); }
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; padding: 60px 40px;
+  color: var(--text-sec); text-align: center;
+}
+.empty-state svg { width: 64px; height: 64px; opacity: 0.3; }
+.empty-state p { font-size: 14px; }
 
-/* MODALS */
-.ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
-.ov.act{display:flex}
-.mdl{background:var(--bgc);border-radius:20px;padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.mdl h3{font-size:17px;font-weight:700;margin-bottom:16px;text-align:center}
-.mcats{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
-.mcat{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:2px solid var(--bor);background:transparent;cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;color:var(--txt);transition:all .2s;text-align:left}
-.mcat.sel{border-color:var(--acc);background:var(--acs)}
-.mcat-i{font-size:24px}
-.mcat-d{font-size:11px;color:var(--txs);font-weight:400}
-.mbtns{display:flex;gap:10px}
-.mbtn{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
-.mbtn-p{background:var(--acc);color:#fff}.mbtn-s{background:var(--bor);color:var(--txt)}
-.mbtn:disabled{opacity:.4}
+/* === MODALS === */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 200;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg-card); border-radius: 20px;
+  padding: 24px; width: 100%; max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+.modal-cats { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.cat-option {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-radius: 12px;
+  border: 2px solid var(--border); background: transparent;
+  cursor: pointer; font-family: inherit; font-size: 14px;
+  font-weight: 500; color: var(--text); transition: all 0.2s; text-align: left;
+}
+.cat-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+.cat-option .cat-icon { font-size: 24px; }
+.cat-option .cat-desc { font-size: 11px; color: var(--text-sec); font-weight: 400; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btn {
+  flex: 1; padding: 12px; border-radius: 10px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.modal-btn.primary { background: var(--accent); color: #fff; }
+.modal-btn.secondary { background: var(--border); color: var(--text); }
+.modal-btn:disabled { opacity: 0.4; cursor: default; }
+.loading-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7); z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px; color: #fff;
+}
+.loading-overlay.active { display: flex; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; }
 
-/* LOADING */
-.ldov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#fff}
-.ldov.act{display:flex}
-.spin{width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
+/* === COLLECTIONS === */
+.coll-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; align-content: start; }
+.coll-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius); background: var(--bg-card); box-shadow: var(--shadow); cursor: pointer; transition: transform 0.15s; }
+.coll-card:active { transform: scale(0.98); }
+.coll-color { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; font-weight: 700; flex-shrink: 0; }
+.coll-info { flex: 1; }
+.coll-name { font-size: 14px; font-weight: 600; }
+.coll-count { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+.coll-del { background: none; border: none; color: var(--text-sec); font-size: 20px; cursor: pointer; padding: 4px; }
+.coll-add-bar { padding: 12px 16px; display: flex; gap: 8px; flex-shrink: 0; }
+.coll-add-bar input { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg-card); font-size: 13px; color: var(--text); outline: none; font-family: inherit; }
+.coll-add-bar input:focus { border-color: var(--accent); }
+.coll-add-btn { padding: 10px 16px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
+.coll-back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; padding: 12px 16px; font-family: inherit; }
 
-/* COLLECTIONS */
-.cl{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
-.cc{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--rad);background:var(--bgc);box-shadow:var(--shd);cursor:pointer}
-.cc:active{transform:scale(.98)}
-.ccol{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700;flex-shrink:0}
-.cci{flex:1}
-.ccn{font-size:14px;font-weight:600}
-.ccc{font-size:11px;color:var(--txs);margin-top:2px}
-.ccdel{background:none;border:none;color:var(--txs);font-size:20px;cursor:pointer;padding:4px}
-.cabar{padding:12px 16px;display:flex;gap:8px;flex-shrink:0}
-.cabar input{flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid var(--bor);background:var(--bgc);font-size:13px;color:var(--txt);outline:none;font-family:inherit}
-.cabar input:focus{border-color:var(--acc)}
-.cabtn{padding:10px 16px;border-radius:10px;border:none;background:var(--acc);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
-.cbk{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;padding:12px 16px;font-family:inherit}
+/* === SETTINGS === */
+.settings-list { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.settings-section { font-size: 11px; font-weight: 600; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 0 6px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: var(--radius); background: var(--bg-card); }
+.setting-label { font-size: 13px; font-weight: 500; }
+.setting-value { font-size: 12px; color: var(--text-sec); }
+.toggle { width: 44px; height: 26px; border-radius: 13px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background 0.2s; }
+.toggle.on { background: var(--accent); }
+.toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle.on::after { transform: translateX(18px); }
+.setting-select { padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--bg); font-size: 12px; color: var(--text); font-family: inherit; cursor: pointer; }
+.storage-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--border); margin-top: 8px; overflow: hidden; }
+.storage-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s; }
 
-/* SETTINGS */
-.sl{padding:16px;display:flex;flex-direction:column;gap:6px}
-.ssec{font-size:11px;font-weight:600;color:var(--txs);text-transform:uppercase;letter-spacing:.5px;padding:16px 0 6px}
-.sr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:var(--rad);background:var(--bgc)}
-.slb{font-size:13px;font-weight:500}
-.sv{font-size:12px;color:var(--txs)}
-.tgl{width:44px;height:26px;border-radius:13px;background:var(--bor);border:none;cursor:pointer;position:relative;transition:background .2s}
-.tgl.on{background:var(--acc)}
-.tgl::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.tgl.on::after{transform:translateX(18px)}
-.ssel2{padding:6px 10px;border-radius:8px;border:1.5px solid var(--bor);background:var(--bg);font-size:12px;color:var(--txt);font-family:inherit;cursor:pointer}
-.stbar{width:100%;height:6px;border-radius:3px;background:var(--bor);margin-top:8px;overflow:hidden}
-.stfl{height:100%;background:var(--acc);border-radius:3px}
+/* === READER === */
+#readerView { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 150; display: none; flex-direction: column; }
+#readerView.active { display: flex; }
+.reader-header { height: calc(var(--header-h) + var(--safe-top)); padding-top: var(--safe-top); background: rgba(0,0,0,0.85); display: flex; align-items: center; padding-left: 12px; padding-right: 12px; z-index: 10; transition: opacity 0.3s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.reader-header.fs-hidden { opacity: 0; pointer-events: none; }
+.reader-back { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 8px; display: flex; align-items: center; }
+.reader-title { flex: 1; color: #fff; font-size: 13px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; }
+.reader-page-info { color: rgba(255,255,255,0.7); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reader-settings-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 8px; }
+.reader-content-area { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; }
+#readerContent { display: flex; align-items: center; justify-content: center; transform-origin: 0 0; will-change: transform; height: 100%; width: 100%; }
+#readerContent img { max-height: 100%; max-width: 100%; object-fit: contain; display: none; }
+#readerContent canvas { max-height: 100%; object-fit: contain; display: none; }
+#readerContent.double-page { gap: 2px; }
+.reader-footer { background: rgba(0,0,0,0.85); padding: 8px 16px calc(8px + var(--safe-bottom)); display: flex; align-items: center; gap: 12px; z-index: 10; transition: opacity 0.3s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.reader-footer.fs-hidden { opacity: 0; pointer-events: none; }
+.reader-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); outline: none; }
+.reader-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.4); cursor: pointer; }
+.reader-page-num { color: #fff; font-size: 12px; font-variant-numeric: tabular-nums; min-width: 50px; text-align: center; }
+.reader-settings-panel { position: absolute; top: calc(var(--header-h) + var(--safe-top)); right: 0; width: 260px; background: rgba(20,20,35,0.95); border-radius: 0 0 0 16px; padding: 16px; z-index: 20; display: none; flex-direction: column; gap: 14px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.reader-settings-panel.active { display: flex; }
+.rs-label { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.brightness-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); outline: none; }
+.brightness-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; cursor: pointer; }
+.rs-modes { display: flex; gap: 6px; }
+.rs-mode-btn { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.15); background: transparent; color: #fff; font-size: 11px; cursor: pointer; font-family: inherit; text-align: center; transition: all 0.2s; }
+.rs-mode-btn.active { border-color: var(--accent); background: rgba(74,158,255,0.15); }
 
-/* READER */
-#reader{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:150;display:none;flex-direction:column}
-#reader.act{display:flex}
-.rh{height:calc(var(--hdrh)+var(--st));padding-top:var(--st);background:rgba(0,0,0,.85);display:flex;align-items:center;padding-left:12px;padding-right:12px;z-index:10;transition:opacity .3s;backdrop-filter:blur(8px)}
-.rh.fsh{opacity:0;pointer-events:none}
-.rbk{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:8px;display:flex;align-items:center}
-.rtit{flex:1;color:#fff;font-size:13px;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
-.rpi{color:rgba(255,255,255,.7);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rsbtn{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:8px}
-.rca{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none}
-#rcont{display:flex;align-items:center;justify-content:center;transform-origin:0 0;will-change:transform;height:100%;width:100%}
-#rcont img{max-height:100%;max-width:100%;object-fit:contain;display:none}
-#rcont canvas{max-height:100%;object-fit:contain;display:none}
-#rcont.dbl{gap:2px}
-.rf{background:rgba(0,0,0,.85);padding:8px 16px calc(8px + var(--sb));display:flex;align-items:center;gap:12px;z-index:10;transition:opacity .3s;backdrop-filter:blur(8px)}
-.rf.fsh{opacity:0;pointer-events:none}
-.rsl{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.2);outline:none}
-.rsl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--acc);box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
-.rpn{color:#fff;font-size:12px;font-variant-numeric:tabular-nums;min-width:50px;text-align:center}
-.rset{position:absolute;top:calc(var(--hdrh)+var(--st));right:0;width:260px;background:rgba(20,20,35,.95);border-radius:0 0 0 16px;padding:16px;z-index:20;display:none;flex-direction:column;gap:14px;backdrop-filter:blur(12px)}
-.rset.act{display:flex}
-.rsl2{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.rbr{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.2);outline:none}
-.rbr::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;cursor:pointer}
-.rmds{display:flex;gap:6px}
-.rmd{flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid rgba(255,255,255,.15);background:transparent;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;text-align:center}
-.rmd.act{border-color:var(--acc);background:rgba(74,158,255,.15)}
+/* Book detail bottom sheet */
+.book-detail-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+.book-detail-overlay.active { display: flex; }
+.book-detail { background: var(--bg-card); border-radius: 20px 20px 0 0; padding: 24px; padding-bottom: calc(24px + var(--safe-bottom)); width: 100%; max-width: 500px; max-height: 80dvh; overflow-y: auto; }
+.book-detail-header { display: flex; gap: 16px; margin-bottom: 20px; }
+.book-detail-cover { width: 80px; height: 112px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); flex-shrink: 0; }
+.book-detail-info { flex: 1; }
+.book-detail-title { font-size: 16px; font-weight: 700; }
+.book-detail-meta { font-size: 12px; color: var(--text-sec); margin-top: 4px; }
+.book-detail-progress { margin-top: 8px; font-size: 12px; color: var(--accent); font-weight: 600; }
+.detail-action { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--bg); border: none; font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer; font-family: inherit; text-align: left; width: 100%; margin-bottom: 8px; }
+.detail-action:active { background: var(--border); }
+.detail-action .da-icon { font-size: 20px; width: 28px; text-align: center; }
+.detail-action.danger { color: var(--danger); }
 
-/* BOOK DETAIL */
-.bdov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
-.bdov.act{display:flex}
-.bd{background:var(--bgc);border-radius:20px 20px 0 0;padding:24px;padding-bottom:calc(24px + var(--sb));width:100%;max-width:500px;max-height:80dvh;overflow-y:auto}
-.bdh{display:flex;gap:16px;margin-bottom:20px}
-.bdcv{width:80px;height:112px;object-fit:cover;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);flex-shrink:0}
-.bdi{flex:1}
-.bdt{font-size:16px;font-weight:700}
-.bdm{font-size:12px;color:var(--txs);margin-top:4px}
-.bdp{margin-top:8px;font-size:12px;color:var(--acc);font-weight:600}
-.bdas{display:flex;flex-direction:column;gap:8px}
-.bda{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:var(--bg);border:none;font-size:14px;font-weight:500;color:var(--txt);cursor:pointer;font-family:inherit;text-align:left;width:100%}
-.bda:active{background:var(--bor)}
-.bda .dai{font-size:20px;width:28px;text-align:center}
-.bda.dng{color:var(--dan)}
+/* Toast */
+.toast { position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg-header); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: all 0.3s; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 90%; text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* TOAST */
-.toast{position:fixed;bottom:calc(var(--navh)+var(--sb)+20px);left:50%;transform:translateX(-50%) translateY(80px);background:var(--bgh);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:300;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:90%;text-align:center}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-@media(min-width:768px){.grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px}}
-@media(min-width:1024px){.grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px}}
+/* Tablet */
+@media (min-width: 768px) { .lib-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; } .modal { max-width: 400px; } }
+@media (min-width: 1024px) { .lib-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; } }
 </style>
 </head>
 <body data-theme="light">
 
 <!-- HEADER -->
-<header id="hdr">
-  <div class="hdr-logo">HOME <b>READER</b></div>
-  <div class="hdr-r">
-    <span id="hTime">--:--</span>
-    <span id="hDate">--/--</span>
-    <span class="bat-sh"><span class="bat-fl" id="batFl" style="width:100%"></span></span>
-    <span id="batPc">--%</span>
+<header id="appHeader">
+  <div class="header-logo">HOME <span>READER</span></div>
+  <div class="header-right">
+    <span id="headerTime">--:--</span>
+    <span id="headerDate">--/--</span>
+    <span class="battery-shell"><span class="battery-fill" id="batteryFill" style="width:100%"></span></span>
+    <span id="batteryPct">--%</span>
   </div>
 </header>
-<div class="hdr-spacer"></div>
 
 <!-- UPDATE BANNER -->
-<div class="upd-banner" id="updBanner">
+<div class="update-banner" id="updateBanner">
   <span>Nouvelle version disponible !</span>
-  <button class="upd-btn" id="updBtn">Recharger</button>
+  <button class="update-btn" id="updateBtn">Recharger</button>
 </div>
 
 <!-- MAIN -->
-<main id="main">
-  <!-- LIBRARY -->
-  <div class="pg act" id="pgLib">
-    <div class="lt">
+<main id="mainArea">
+  <!-- LIBRARY PAGE -->
+  <div class="page active" id="pageLibrary">
+    <div class="lib-toolbar">
       <div id="resumeBar" style="display:none"></div>
-      <div class="fbar" id="fbar">
-        <button class="fb act" data-f="all">Tous</button>
-        <button class="fb" data-f="BD">&#x1F4D8; BD</button>
-        <button class="fb" data-f="Manga">&#x1F4D5; Manga</button>
-        <button class="fb" data-f="Autres">&#x1F4D7; Autres</button>
-        <button class="fb" data-f="favorites">&#x2B50; Favoris</button>
-        <button class="fb" data-f="reading">&#x1F4D6; En cours</button>
-        <button class="fb" data-f="finished">&#x2705; Termin&#233;s</button>
+      <div class="lib-filters" id="filterBar">
+        <button class="filter-btn active" data-filter="all">Tous</button>
+        <button class="filter-btn" data-filter="BD">&#x1F4D8; BD</button>
+        <button class="filter-btn" data-filter="Manga">&#x1F4D5; Manga</button>
+        <button class="filter-btn" data-filter="Autres">&#x1F4D7; Autres</button>
+        <button class="filter-btn" data-filter="favorites">&#x2B50; Favoris</button>
+        <button class="filter-btn" data-filter="reading">&#x1F4D6; En cours</button>
+        <button class="filter-btn" data-filter="finished">&#x2705; Termin&#233;s</button>
       </div>
-      <div class="sbar">
-        <input class="sinp" id="sInp" type="text" placeholder="Rechercher un titre...">
-        <select class="ssel" id="sSort"><option value="recent">R&#233;cents</option><option value="name">Nom A-Z</option><option value="lastread">Derni&#232;re lecture</option></select>
+      <div class="lib-search">
+        <input class="search-input" id="searchInput" type="text" placeholder="Rechercher un titre...">
+        <select class="sort-select" id="sortSelect">
+          <option value="recent">R&#233;cents</option>
+          <option value="name">Nom A-Z</option>
+          <option value="lastread">Derni&#232;re lecture</option>
+        </select>
       </div>
     </div>
-    <div class="grid" id="bGrid"></div>
-    <div class="empty" id="empt" style="display:none">
+    <div class="lib-grid" id="bookGrid"></div>
+    <div class="empty-state" id="emptyState" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
       <p>Aucun livre pour le moment.<br>Appuie sur <strong>+</strong> pour en ajouter !</p>
     </div>
   </div>
-  <!-- COLLECTIONS -->
-  <div class="pg" id="pgColl">
-    <div id="cMain">
-      <div class="cabar"><input type="text" id="cInp" placeholder="Nouvelle collection..." maxlength="30"><button class="cabtn" id="cAddBtn">Cr&#233;er</button></div>
-      <div class="cl" id="cList"></div>
+  <!-- COLLECTIONS PAGE -->
+  <div class="page" id="pageCollections">
+    <div id="collMainView">
+      <div class="coll-add-bar"><input type="text" id="collNameInput" placeholder="Nouvelle collection..." maxlength="30"><button class="coll-add-btn" id="collAddBtn">Cr&#233;er</button></div>
+      <div class="coll-list" id="collList"></div>
     </div>
-    <div id="cDet" style="display:none">
-      <button class="cbk" id="cBkBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg> Retour</button>
-      <h3 style="padding:0 16px;font-size:17px;font-weight:700" id="cDetTit"></h3>
-      <div class="grid" id="cDetGrid" style="padding:12px 16px"></div>
+    <div id="collDetailView" style="display:none">
+      <button class="coll-back-btn" id="collBackBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg> Retour</button>
+      <h3 style="padding:0 16px;font-size:17px;font-weight:700" id="collDetailTitle"></h3>
+      <div class="lib-grid" id="collDetailGrid" style="padding:12px 16px"></div>
     </div>
   </div>
-  <!-- SETTINGS -->
-  <div class="pg" id="pgSet">
-    <div class="sl">
-      <div class="ssec">Apparence</div>
-      <div class="sr"><span class="slb">&#x1F319; Th&#232;me sombre</span><button class="tgl" id="tglTh"></button></div>
-      <div class="sr"><span class="slb">&#x1F4D0; Taille grille</span><select class="ssel2" id="sGrd"><option value="90">Petite</option><option value="110" selected>Moyenne</option><option value="140">Grande</option></select></div>
-      <div class="ssec">Lecture</div>
-      <div class="sr"><span class="slb">&#x1F4D6; Sens par d&#233;faut</span><select class="ssel2" id="sDir"><option value="ltr">Gauche &#8594; Droite (BD)</option><option value="rtl">Droite &#8594; Gauche (Manga)</option></select></div>
-      <div class="sr"><span class="slb">&#x1F4C4; Mode par d&#233;faut</span><select class="ssel2" id="sMod"><option value="single">Page simple</option><option value="double">Double page</option><option value="vertical">D&#233;filement vertical</option></select></div>
-      <div class="ssec">Stockage</div>
-      <div class="sr" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="slb">&#x1F4BE; Espace utilis&#233;</span><span class="sv" id="stInfo">Calcul...</span></div><div class="stbar"><div class="stfl" id="stFl" style="width:0%"></div></div></div>
-      <div class="ssec">&#192; propos</div>
-      <div class="sr"><span class="slb">HOME READER</span><span class="sv" id="verLbl">v1.2.1</span></div>
-      <div class="sr"><span class="slb">Formats support&#233;s</span><span class="sv">CBZ, CBR, CB7, PDF, EPUB</span></div>
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="pageSettings">
+    <div class="settings-list">
+      <div class="settings-section">Apparence</div>
+      <div class="setting-row"><span class="setting-label">&#x1F319; Th&#232;me sombre</span><button class="toggle" id="toggleTheme"></button></div>
+      <div class="setting-row"><span class="setting-label">&#x1F4D0; Taille grille</span><select class="setting-select" id="gridSizeSelect"><option value="90">Petite</option><option value="110" selected>Moyenne</option><option value="140">Grande</option></select></div>
+      <div class="settings-section">Lecture</div>
+      <div class="setting-row"><span class="setting-label">&#x1F4D6; Sens par d&#233;faut</span><select class="setting-select" id="defaultDirection"><option value="ltr">Gauche &#8594; Droite (BD)</option><option value="rtl">Droite &#8594; Gauche (Manga)</option></select></div>
+      <div class="setting-row"><span class="setting-label">&#x1F4C4; Mode par d&#233;faut</span><select class="setting-select" id="defaultMode"><option value="single">Page simple</option><option value="double">Double page</option><option value="vertical">D&#233;filement vertical</option></select></div>
+      <div class="settings-section">Stockage</div>
+      <div class="setting-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="setting-label">&#x1F4BE; Espace utilis&#233;</span><span class="setting-value" id="storageInfo">Calcul...</span></div><div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div></div>
+      <div class="settings-section">&#192; propos</div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.3.0</span></div>
+      <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
     </div>
   </div>
 </main>
 
-<!-- NAV -->
-<nav id="nav">
-  <button class="nb act" data-p="pgLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>Biblioth&#232;que</button>
-  <button class="nb" data-p="pgColl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>Collections</button>
-  <button class="nb" data-p="pgSet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Param&#232;tres</button>
+<!-- BOTTOM NAV -->
+<nav id="bottomNav">
+  <button class="nav-btn active" data-page="pageLibrary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>Biblioth&#232;que</button>
+  <button class="nav-btn" data-page="pageCollections"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>Collections</button>
+  <button class="nav-btn" data-page="pageSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Param&#232;tres</button>
 </nav>
-<div class="nav-spacer"></div>
 
-<button class="fab" id="fabBtn">+</button>
-<div class="mbar" id="mBar"><span id="mCnt">0</span><div style="display:flex;gap:8px"><button class="mb mb-c" id="mNo">Annuler</button><button class="mb mb-d" id="mDel">Supprimer</button></div></div>
+<button class="fab" id="fabAdd">+</button>
+<div class="multi-actions" id="multiActions"><span id="multiCount">0 s&#233;lectionn&#233;(s)</span><div style="display:flex;gap:8px"><button class="multi-btn cancel" id="multiCancel">Annuler</button><button class="multi-btn del" id="multiDelete">Supprimer</button></div></div>
 
-<!-- IMPORT MODAL -->
-<div class="ov" id="impOv"><div class="mdl"><h3>Cat&#233;gorie</h3><div class="mcats" id="cats">
-  <button class="mcat" data-c="BD"><span class="mcat-i">&#x1F4D8;</span><div><div>BD / Comic</div><div class="mcat-d">Lecture gauche &#8594; droite</div></div></button>
-  <button class="mcat" data-c="Manga"><span class="mcat-i">&#x1F4D5;</span><div><div>Manga</div><div class="mcat-d">Lecture droite &#8594; gauche</div></div></button>
-  <button class="mcat" data-c="Autres"><span class="mcat-i">&#x1F4D7;</span><div><div>Autres</div><div class="mcat-d">Livre, roman graphique...</div></div></button>
-</div><div class="mbtns"><button class="mbtn mbtn-s" id="impNo">Annuler</button><button class="mbtn mbtn-p" id="impYes" disabled>Importer</button></div></div></div>
+<!-- Import modal -->
+<div class="modal-overlay" id="importModal"><div class="modal"><h3>Cat&#233;gorie</h3><div class="modal-cats" id="catOptions">
+  <button class="cat-option" data-cat="BD"><span class="cat-icon">&#x1F4D8;</span><div><div>BD / Comic</div><div class="cat-desc">Lecture gauche &#8594; droite</div></div></button>
+  <button class="cat-option" data-cat="Manga"><span class="cat-icon">&#x1F4D5;</span><div><div>Manga</div><div class="cat-desc">Lecture droite &#8594; gauche</div></div></button>
+  <button class="cat-option" data-cat="Autres"><span class="cat-icon">&#x1F4D7;</span><div><div>Autres</div><div class="cat-desc">Livre, roman graphique...</div></div></button>
+</div><div class="modal-btns"><button class="modal-btn secondary" id="importCancel">Annuler</button><button class="modal-btn primary" id="importConfirm" disabled>Importer</button></div></div></div>
 
-<div class="ldov" id="ldOv"><div class="spin"></div><span id="ldTxt">Chargement...</span></div>
-<div class="bdov" id="dtOv"><div class="bd" id="dtBox"></div></div>
-<div class="ov" id="cfOv"><div class="mdl" id="cfBox"></div></div>
-<div class="ov" id="asOv"><div class="mdl" id="asBox"></div></div>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><span class="loading-text" id="loadingText">Chargement...</span></div>
+<div class="book-detail-overlay" id="bookDetailOverlay"><div class="book-detail" id="bookDetail"></div></div>
+<div class="modal-overlay" id="confirmOverlay"><div class="modal" id="confirmBox"></div></div>
+<div class="modal-overlay" id="assignOverlay"><div class="modal" id="assignBox"></div></div>
 
 <!-- READER -->
-<div id="reader">
-  <div class="rh" id="rHdr">
-    <button class="rbk" id="rBk"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg></button>
-    <div class="rtit" id="rTit"></div>
-    <div class="rpi" id="rPi"></div>
-    <button class="rsbtn" id="rSBtn">&#x2699;&#xFE0F;</button>
+<div id="readerView">
+  <div class="reader-header" id="readerHeader">
+    <button class="reader-back" id="readerBack"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg></button>
+    <div class="reader-title" id="readerTitle"></div>
+    <div class="reader-page-info" id="readerPageInfo"></div>
+    <button class="reader-settings-btn" id="readerSettingsBtn">&#x2699;&#xFE0F;</button>
   </div>
-  <div class="rset" id="rSet">
-    <div class="rsl2">Luminosit&#233;</div>
-    <input type="range" class="rbr" id="rBri" min="20" max="100" value="100">
-    <div class="rsl2">Mode de lecture</div>
-    <div class="rmds"><button class="rmd act" data-rm="single">Simple</button><button class="rmd" data-rm="double">Double</button><button class="rmd" data-rm="vertical">Vertical</button></div>
-    <div class="rsl2">Sens de lecture</div>
-    <div class="rmds"><button class="rmd act" data-rd="ltr">G &#8594; D</button><button class="rmd" data-rd="rtl">D &#8594; G</button></div>
+  <div class="reader-settings-panel" id="readerSettingsPanel">
+    <div class="rs-label">Luminosit&#233;</div>
+    <input type="range" class="brightness-slider" id="brightnessSlider" min="20" max="100" value="100">
+    <div class="rs-label">Mode de lecture</div>
+    <div class="rs-modes"><button class="rs-mode-btn active" data-mode="single">Simple</button><button class="rs-mode-btn" data-mode="double">Double</button><button class="rs-mode-btn" data-mode="vertical">Vertical</button></div>
+    <div class="rs-label">Sens de lecture</div>
+    <div class="rs-modes"><button class="rs-mode-btn active" data-dir="ltr">G &#8594; D</button><button class="rs-mode-btn" data-dir="rtl">D &#8594; G</button></div>
   </div>
-  <div class="rca" id="rArea">
-    <div id="rcont">
-      <img id="rI1"><img id="rI2">
-      <canvas id="rC1"></canvas><canvas id="rC2"></canvas>
+  <div class="reader-content-area" id="readerContentArea">
+    <div id="readerContent">
+      <img id="readerImg1"><img id="readerImg2">
+      <canvas id="readerCanvas1"></canvas><canvas id="readerCanvas2"></canvas>
     </div>
   </div>
-  <div class="rf" id="rFt">
-    <input type="range" class="rsl" id="rSl" min="1" max="1" value="1">
-    <span class="rpn" id="rPn">1/1</span>
+  <div class="reader-footer" id="readerFooter">
+    <input type="range" class="reader-slider" id="readerSlider" min="1" max="1" value="1">
+    <span class="reader-page-num" id="readerPageNum">1/1</span>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<input type="file" id="fIn" accept=".cbz,.cbr,.pdf,.epub,.cb7" multiple style="display:none">
+<input type="file" id="fileInput" accept=".cbz,.cbr,.pdf,.epub,.cb7" multiple style="display:none">
 
 <script>
-/* HOME READER v1.2.0 */
-var VER = '1.2.1';
-if (typeof pdfjsLib !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
+/* HOME READER v1.3.0 */
+var VER='1.3.0';
+if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-/* STATE */
-var S = {
-  db: null, books: [], colls: [],
-  filter: 'all', sort: 'recent', search: '',
-  selMode: false, selIds: new Set(),
-  pFiles: null, pCat: null,
-  rBook: null, rPages: [], rPage: 0,
-  rMode: 'single', rDir: 'ltr', rFS: false,
-  rScale: 1, rTx: 0, rTy: 0,
-  tSX: 0, tSY: 0, tST: 0, lastTap: 0,
-  pinchD: 0, pinchS: 1, pinching: false, panning: false,
-  panX: 0, panY: 0,
-  theme: 'light', gs: '110', dDir: 'ltr', dMode: 'single', bri: 100,
-  archReady: false, Arch: null, viewColl: null, rAC: null
-};
+var S={db:null,books:[],colls:[],filter:'all',sort:'recent',search:'',selMode:false,selIds:new Set(),pFiles:null,pCat:null,
+rBook:null,rPages:[],rPage:0,rMode:'single',rDir:'ltr',rFS:false,rScale:1,rTx:0,rTy:0,
+tSX:0,tSY:0,tST:0,lastTap:0,pinchD:0,pinchS:1,pinching:false,panning:false,panX:0,panY:0,
+theme:'light',gs:'110',dDir:'ltr',dMode:'single',bri:100,archReady:false,Arch:null,viewColl:null,rAC:null};
 
-/* LIBARCHIVE LOADER */
-function initArch() {
-  import('https://cdn.jsdelivr.net/npm/libarchive.js@1.3.0/main.js').then(function(mod) {
-    return fetch('https://cdn.jsdelivr.net/npm/libarchive.js@1.3.0/dist/worker-bundle.js').then(function(r) { return r.text(); }).then(function(txt) {
-      var blob = new Blob([txt], { type: 'application/javascript' });
-      var url = URL.createObjectURL(blob);
-      mod.Archive.init({ workerUrl: url });
-      S.Arch = mod.Archive;
-      S.archReady = true;
-      console.log('[HR] libarchive OK');
-    });
-  }).catch(function(e) {
-    console.warn('[HR] libarchive fail:', e);
-  });
+function $(id){return document.getElementById(id)}
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
+function showLd(m){$('loadingText').textContent=m||'Chargement...';$('loadingOverlay').classList.add('active')}
+function hideLd(){$('loadingOverlay').classList.remove('active')}
+function isImg(n){return/\.(jpe?g|png|gif|webp|bmp|avif)$/i.test(n)}
+function sortPaths(a){return a.slice().sort(function(x,y){var nx=x.replace(/\D/g,'').padStart(10,'0'),ny=y.replace(/\D/g,'').padStart(10,'0');return nx<ny?-1:nx>ny?1:x.localeCompare(y)})}
+function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onloadend=function(){r(fr.result)};fr.readAsDataURL(blob)})}
+function pad(v){return v<10?'0'+v:''+v}
+
+/* CLOCK + BATTERY */
+function uClock(){var n=new Date();$('headerTime').textContent=pad(n.getHours())+':'+pad(n.getMinutes());$('headerDate').textContent=pad(n.getDate())+'/'+pad(n.getMonth()+1)}
+function uBat(){if(!('getBattery' in navigator))return;navigator.getBattery().then(function(b){var up=function(){var p=Math.round(b.level*100);$('batteryPct').textContent=p+'%';var f=$('batteryFill');f.style.width=p+'%';f.className='battery-fill'+(p<=20?' low':p<=50?' mid':'')};up();b.addEventListener('levelchange',up)}).catch(function(){})}
+
+/* LIBARCHIVE */
+function initArch(){
+  import('https://cdn.jsdelivr.net/npm/libarchive.js@1.3.0/main.js').then(function(mod){
+    return fetch('https://cdn.jsdelivr.net/npm/libarchive.js@1.3.0/dist/worker-bundle.js').then(function(r){return r.text()}).then(function(txt){
+      var blob=new Blob([txt],{type:'application/javascript'});
+      mod.Archive.init({workerUrl:URL.createObjectURL(blob)});
+      S.Arch=mod.Archive;S.archReady=true;console.log('[HR] libarchive OK')
+    })
+  }).catch(function(e){console.warn('[HR] libarchive fail:',e)})
 }
 
 /* DB */
-function openDB() {
-  return new Promise(function(ok, no) {
-    var r = indexedDB.open('HomeReaderDB', 2);
-    r.onupgradeneeded = function(e) {
-      var db = e.target.result;
-      if (!db.objectStoreNames.contains('books')) { var s = db.createObjectStore('books', { keyPath: 'id', autoIncrement: true }); s.createIndex('category','category'); }
-      if (!db.objectStoreNames.contains('bookFiles')) db.createObjectStore('bookFiles', { keyPath: 'id' });
-      if (!db.objectStoreNames.contains('collections')) db.createObjectStore('collections', { keyPath: 'id', autoIncrement: true });
-    };
-    r.onsuccess = function(e) { S.db = e.target.result; ok(); };
-    r.onerror = function(e) { no(e.target.error); };
-  });
-}
-function dTx(s, m) { return S.db.transaction(s, m || 'readonly').objectStore(s); }
-function dAll(s) { return new Promise(function(r, j) { var q = dTx(s).getAll(); q.onsuccess = function() { r(q.result); }; q.onerror = function() { j(q.error); }; }); }
-function dGet(s, id) { return new Promise(function(r, j) { var q = dTx(s).get(id); q.onsuccess = function() { r(q.result); }; q.onerror = function() { j(q.error); }; }); }
-function dPut(s, d) { return new Promise(function(r, j) { var tx = S.db.transaction(s,'readwrite'); var st = tx.objectStore(s); var q = d.id ? st.put(d) : st.add(d); q.onsuccess = function() { r(q.result); }; q.onerror = function() { j(q.error); }; }); }
-function dDel(s, id) { return new Promise(function(r, j) { var q = dTx(s,'readwrite').delete(id); q.onsuccess = function() { r(); }; q.onerror = function() { j(q.error); }; }); }
-
-/* CLOCK + BATTERY */
-function uClock() {
-  var n = new Date();
-  $('hTime').textContent = pad(n.getHours()) + ':' + pad(n.getMinutes());
-  $('hDate').textContent = pad(n.getDate()) + '/' + pad(n.getMonth()+1);
-}
-function pad(v) { return v < 10 ? '0' + v : '' + v; }
-function uBat() {
-  if (!('getBattery' in navigator)) return;
-  navigator.getBattery().then(function(b) {
-    var up = function() {
-      var p = Math.round(b.level * 100);
-      $('batPc').textContent = p + '%';
-      var f = $('batFl'); f.style.width = p + '%';
-      f.className = 'bat-fl' + (p <= 20 ? ' lo' : p <= 50 ? ' mi' : '');
-    };
-    up(); b.addEventListener('levelchange', up);
-  }).catch(function() {});
-}
-
-/* UTILS */
-function $(id) { return document.getElementById(id); }
-function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(function() { t.classList.remove('show'); }, 2500); }
-function showLd(m) { $('ldTxt').textContent = m || 'Chargement...'; $('ldOv').classList.add('act'); }
-function hideLd() { $('ldOv').classList.remove('act'); }
-function isImg(n) { return /\.(jpe?g|png|gif|webp|bmp|avif)$/i.test(n); }
-function sortPaths(a) { return a.sort(function(x, y) { var nx = x.replace(/\D/g,'').padStart(10,'0'), ny = y.replace(/\D/g,'').padStart(10,'0'); return nx < ny ? -1 : nx > ny ? 1 : x.localeCompare(y); }); }
-function b64(blob) { return new Promise(function(r) { var fr = new FileReader(); fr.onloadend = function() { r(fr.result); }; fr.readAsDataURL(blob); }); }
+function openDB(){return new Promise(function(ok,no){var r=indexedDB.open('HomeReaderDB',2);r.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('books')){var s=db.createObjectStore('books',{keyPath:'id',autoIncrement:true});s.createIndex('category','category')}if(!db.objectStoreNames.contains('bookFiles'))db.createObjectStore('bookFiles',{keyPath:'id'});if(!db.objectStoreNames.contains('collections'))db.createObjectStore('collections',{keyPath:'id',autoIncrement:true})};r.onsuccess=function(e){S.db=e.target.result;ok()};r.onerror=function(e){no(e.target.error)}})}
+function dTx(s,m){return S.db.transaction(s,m||'readonly').objectStore(s)}
+function dAll(s){return new Promise(function(r,j){var q=dTx(s).getAll();q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
+function dGet(s,id){return new Promise(function(r,j){var q=dTx(s).get(id);q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
+function dPut(s,d){return new Promise(function(r,j){var tx=S.db.transaction(s,'readwrite');var st=tx.objectStore(s);var q=d.id?st.put(d):st.add(d);q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
+function dDel(s,id){return new Promise(function(r,j){var q=dTx(s,'readwrite').delete(id);q.onsuccess=function(){r()};q.onerror=function(){j(q.error)}})}
 
 /* NAV */
-function goPage(id) {
-  document.querySelectorAll('.pg').forEach(function(p) { p.classList.remove('act'); });
-  $(id).classList.add('act');
-  document.querySelectorAll('.nb').forEach(function(b) { b.classList.toggle('act', b.dataset.p === id); });
-  $('fabBtn').style.display = id === 'pgLib' ? 'flex' : 'none';
-}
-document.querySelectorAll('.nb').forEach(function(b) { b.addEventListener('click', function() { goPage(b.dataset.p); }); });
+function goPage(id){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});$(id).classList.add('active');document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.page===id)});$('fabAdd').style.display=id==='pageLibrary'?'flex':'none'}
+document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('click',function(){goPage(b.dataset.page)})});
 
-/* FILE PARSERS */
-function parseCBZCover(buf) {
-  return JSZip.loadAsync(buf).then(function(zip) {
-    var imgs = []; zip.forEach(function(p, e) { if (!e.dir && isImg(p)) imgs.push({ path: p, entry: e }); });
-    if (!imgs.length) return { cover: null, total: 0 };
-    var sorted = sortPaths(imgs.map(function(i) { return i.path; }));
-    var first = imgs.find(function(i) { return i.path === sorted[0]; });
-    return first.entry.async('blob').then(function(bl) { return { cover: bl, total: imgs.length }; });
-  });
-}
-function parseCBZPages(buf) {
-  return JSZip.loadAsync(buf).then(function(zip) {
-    var imgs = []; zip.forEach(function(p, e) { if (!e.dir && isImg(p)) imgs.push({ path: p, entry: e }); });
-    var sorted = sortPaths(imgs.map(function(i) { return i.path; }));
-    var chain = Promise.resolve([]); 
-    sorted.forEach(function(p) {
-      chain = chain.then(function(pages) {
-        var entry = imgs.find(function(i) { return i.path === p; });
-        return entry.entry.async('blob').then(function(bl) {
-          pages.push({ type: 'image', url: URL.createObjectURL(bl) });
-          return pages;
-        });
-      });
-    });
-    return chain;
-  });
-}
-function parsePDFCover(buf) {
-  return pdfjsLib.getDocument({ data: buf }).promise.then(function(pdf) {
-    return pdf.getPage(1).then(function(page) {
-      var dpr = window.devicePixelRatio || 1;
-      var vp = page.getViewport({ scale: 0.5 * dpr });
-      var c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
-      return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(function() {
-        return new Promise(function(r) { c.toBlob(function(bl) { r({ cover: bl, total: pdf.numPages }); }, 'image/jpeg', 0.8); });
-      });
-    });
-  });
-}
-function parsePDFPages(buf) {
-  return pdfjsLib.getDocument({ data: buf }).promise.then(function(pdf) {
-    var pages = [];
-    for (var i = 1; i <= pdf.numPages; i++) pages.push({ type: 'pdf', pdfDoc: pdf, pageNum: i });
-    return pages;
-  });
-}
-function parseEPUBCover(buf) {
-  return JSZip.loadAsync(buf).then(function(zip) {
-    var imgs = []; zip.forEach(function(p, e) { if (!e.dir && isImg(p)) imgs.push({ path: p.toLowerCase(), entry: e }); });
-    var cv = imgs.find(function(f) { return f.path.includes('cover'); }) || imgs[0];
-    if (!cv) return { cover: null, total: Math.max(imgs.length, 1) };
-    return cv.entry.async('blob').then(function(bl) { return { cover: bl, total: Math.max(imgs.length, 1) }; });
-  });
-}
-function parseEPUBPages(buf) {
-  return JSZip.loadAsync(buf).then(function(zip) {
-    var imgs = []; zip.forEach(function(p, e) { if (!e.dir && isImg(p)) imgs.push({ path: p, entry: e }); });
-    imgs.sort(function(a, b) { return a.path.localeCompare(b.path); });
-    var chain = Promise.resolve([]);
-    imgs.forEach(function(f) {
-      chain = chain.then(function(pages) {
-        return f.entry.async('blob').then(function(bl) {
-          pages.push({ type: 'image', url: URL.createObjectURL(bl) });
-          return pages;
-        });
-      });
-    });
-    return chain;
-  });
-}
+/* PARSERS */
+function parseCBZCover(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});if(!imgs.length)return{cover:null,total:0};var sorted=sortPaths(imgs.map(function(i){return i.path}));var first=imgs.find(function(i){return i.path===sorted[0]});return first.entry.async('blob').then(function(bl){return{cover:bl,total:imgs.length}})})}
+function parseCBZPages(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});var sorted=sortPaths(imgs.map(function(i){return i.path}));var chain=Promise.resolve([]);sorted.forEach(function(p){chain=chain.then(function(pages){var entry=imgs.find(function(i){return i.path===p});return entry.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain})}
+function parsePDFCover(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){return pdf.getPage(1).then(function(page){var dpr=window.devicePixelRatio||1;var vp=page.getViewport({scale:0.5*dpr});var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise.then(function(){return new Promise(function(r){c.toBlob(function(bl){r({cover:bl,total:pdf.numPages})},'image/jpeg',0.8)})})})})}
+function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push({type:'pdf',pdfDoc:pdf,pageNum:i});return pages})}
+function parseEPUBCover(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});var cv=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];if(!cv)return{cover:null,total:Math.max(imgs.length,1)};return cv.entry.async('blob').then(function(bl){return{cover:bl,total:Math.max(imgs.length,1)}})})}
+function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});imgs.sort(function(a,b){return a.path.localeCompare(b.path)});var chain=Promise.resolve([]);imgs.forEach(function(f){chain=chain.then(function(pages){return f.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain})}
 
 /* CBR/CB7 CONVERSION */
-function convertArch(buf, fname) {
-  if (!S.archReady || !S.Arch) return Promise.reject(new Error('Lib non chargee'));
-  var file = new File([buf], fname);
-  return S.Arch.open(file).then(function(archive) {
-    return archive.extractFiles();
-  }).then(function(extracted) {
-    var images = [];
-    function walk(obj, path) {
-      Object.keys(obj).forEach(function(name) {
-        var val = obj[name], full = path ? path + '/' + name : name;
-        if (val instanceof File) { if (isImg(name)) images.push({ path: full, file: val }); }
-        else if (val && typeof val === 'object') walk(val, full);
-      });
-    }
-    walk(extracted, '');
-    if (!images.length) throw new Error('Aucune image');
-    images.sort(function(a, b) { var na = a.path.replace(/\D/g,'').padStart(10,'0'), nb = b.path.replace(/\D/g,'').padStart(10,'0'); return na < nb ? -1 : na > nb ? 1 : a.path.localeCompare(b.path); });
-    var zip = new JSZip();
-    var chain = Promise.resolve();
-    images.forEach(function(img, i) {
-      chain = chain.then(function() {
-        return img.file.arrayBuffer().then(function(ab) {
-          var ext = img.path.split('.').pop();
-          zip.file('page_' + String(i).padStart(4,'0') + '.' + ext, ab);
-        });
-      });
-    });
-    return chain.then(function() {
-      return zip.generateAsync({ type: 'arraybuffer', compression: 'STORE' });
-    }).then(function(cbzBuf) {
-      var coverBlob = images[0].file.slice(0, images[0].file.size, images[0].file.type);
-      return { buffer: cbzBuf, cover: coverBlob, total: images.length };
-    });
-  });
+function convertArch(buf,fname){
+  if(!S.archReady||!S.Arch)return Promise.reject(new Error('Lib non chargee'));
+  var file=new File([buf],fname);
+  return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
+    var images=[];
+    function walk(obj,path){Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val instanceof File){if(isImg(name))images.push({path:full,file:val})}else if(val&&typeof val==='object')walk(val,full)})}
+    walk(extracted,'');
+    if(!images.length)throw new Error('Aucune image');
+    images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
+    var zip=new JSZip();var chain=Promise.resolve();
+    images.forEach(function(img,i){chain=chain.then(function(){return img.file.arrayBuffer().then(function(ab){zip.file('page_'+String(i).padStart(4,'0')+'.'+img.path.split('.').pop(),ab)})})});
+    return chain.then(function(){return zip.generateAsync({type:'arraybuffer',compression:'STORE'})}).then(function(cbzBuf){return{buffer:cbzBuf,cover:images[0].file.slice(0,images[0].file.size,images[0].file.type),total:images.length}})
+  })
 }
 
 /* IMPORT */
-$('fabBtn').addEventListener('click', function() { $('fIn').click(); });
-$('fIn').addEventListener('change', function(e) {
-  if (e.target.files.length > 0) {
-    S.pFiles = Array.from(e.target.files); S.pCat = null;
-    document.querySelectorAll('.mcat').forEach(function(o) { o.classList.remove('sel'); });
-    $('impYes').disabled = true;
-    $('impOv').classList.add('act');
-  }
-  e.target.value = '';
-});
-document.querySelectorAll('.mcat').forEach(function(b) {
-  b.addEventListener('click', function() {
-    document.querySelectorAll('.mcat').forEach(function(o) { o.classList.remove('sel'); });
-    b.classList.add('sel'); S.pCat = b.dataset.c; $('impYes').disabled = false;
-  });
-});
-$('impNo').addEventListener('click', function() { $('impOv').classList.remove('act'); S.pFiles = null; });
-$('impYes').addEventListener('click', function() {
-  $('impOv').classList.remove('act');
-  if (!S.pFiles || !S.pCat) return;
-  var files = S.pFiles, cat = S.pCat; S.pFiles = null;
-  showLd('Importation...'); var count = 0, idx = 0;
-  function next() {
-    if (idx >= files.length) {
-      hideLd();
-      if (count > 0) { toast(count + ' livre(s) importe(s) !'); loadBooks(); }
-      return;
-    }
-    var file = files[idx++];
-    var ext = file.name.split('.').pop().toLowerCase();
-    file.arrayBuffer().then(function(buffer) {
-      var storeType = ext;
+$('fabAdd').addEventListener('click',function(){$('fileInput').click()});
+$('fileInput').addEventListener('change',function(e){if(e.target.files.length>0){S.pFiles=Array.from(e.target.files);S.pCat=null;document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});$('importConfirm').disabled=true;$('importModal').classList.add('active')}e.target.value=''});
+document.querySelectorAll('.cat-option').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});b.classList.add('selected');S.pCat=b.dataset.cat;$('importConfirm').disabled=false})});
+$('importCancel').addEventListener('click',function(){$('importModal').classList.remove('active');S.pFiles=null});
+$('importConfirm').addEventListener('click',function(){
+  $('importModal').classList.remove('active');if(!S.pFiles||!S.pCat)return;
+  var files=S.pFiles,cat=S.pCat;S.pFiles=null;showLd('Importation...');var count=0,idx=0;
+  function next(){
+    if(idx>=files.length){hideLd();if(count>0){toast(count+' livre(s) import\u00e9(s) !');loadBooks()}return}
+    var file=files[idx++],ext=file.name.split('.').pop().toLowerCase();
+    file.arrayBuffer().then(function(buffer){
       var coverP;
-      if (ext === 'cbz') {
-        coverP = parseCBZCover(buffer).then(function(r) { return { cover: r.cover, total: r.total, buf: buffer, st: 'cbz' }; });
-      } else if (ext === 'cbr' || ext === 'cb7') {
-        coverP = parseCBZCover(buffer).then(function(r) {
-          return { cover: r.cover, total: r.total, buf: buffer, st: 'cbz' };
-        }).catch(function() {
-          if (!S.archReady) { toast('Conversion non disponible (chargement...)'); return null; }
-          showLd('Conversion ' + ext.toUpperCase() + ' en CBZ...');
-          return convertArch(buffer, file.name).then(function(conv) {
-            return { cover: conv.cover, total: conv.total, buf: conv.buffer, st: 'cbz' };
-          }).catch(function(e) { toast('Impossible de convertir: ' + file.name); console.error(e); return null; });
-        });
-      } else if (ext === 'pdf') {
-        coverP = parsePDFCover(buffer).then(function(r) { return { cover: r.cover, total: r.total, buf: buffer, st: 'pdf' }; });
-      } else if (ext === 'epub') {
-        coverP = parseEPUBCover(buffer).then(function(r) { return { cover: r.cover, total: r.total, buf: buffer, st: 'epub' }; });
-      } else { toast('Format non reconnu: ' + ext); next(); return; }
-      coverP.then(function(res) {
-        if (!res) { next(); return; }
-        var cvP = res.cover ? b64(res.cover) : Promise.resolve(null);
-        cvP.then(function(coverB64) {
-          var title = file.name.replace(/\.[^.]+$/, '');
-          return dPut('books', {
-            title: title, category: cat, cover: coverB64, fileType: res.st,
-            totalPages: res.total, currentPage: 0, favorite: false, collectionId: null,
-            dateAdded: Date.now(), lastRead: null, status: 'unread'
-          }).then(function(bookId) {
-            return dPut('bookFiles', { id: bookId, data: res.buf });
-          });
-        }).then(function() { count++; next(); }).catch(function(e) { console.error(e); toast('Erreur: ' + file.name); next(); });
-      });
-    }).catch(function(e) { console.error(e); toast('Erreur lecture: ' + file.name); next(); });
+      if(ext==='cbz'){coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}})}
+      else if(ext==='cbr'||ext==='cb7'){
+        coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}}).catch(function(){
+          if(!S.archReady){toast('Conversion non disponible');return null}
+          showLd('Conversion '+ext.toUpperCase()+' \u2192 CBZ...');
+          return convertArch(buffer,file.name).then(function(conv){return{cover:conv.cover,total:conv.total,buf:conv.buffer,st:'cbz'}}).catch(function(e){toast('Impossible de convertir: '+file.name);console.error(e);return null})
+        })
+      }else if(ext==='pdf'){coverP=parsePDFCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
+      else if(ext==='epub'){coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})}
+      else{toast('Format non reconnu: '+ext);next();return}
+      coverP.then(function(res){
+        if(!res){next();return}
+        var cvP=res.cover?b64(res.cover):Promise.resolve(null);
+        cvP.then(function(coverB64){return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'}).then(function(bookId){return dPut('bookFiles',{id:bookId,data:res.buf})})}).then(function(){count++;next()}).catch(function(e){console.error(e);toast('Erreur: '+file.name);next()})
+      })
+    }).catch(function(e){console.error(e);toast('Erreur lecture: '+file.name);next()})
   }
-  next();
+  next()
 });
 
 /* LIBRARY */
-function loadBooks() { return dAll('books').then(function(b) { S.books = b; renderLib(); renderResume(); uStorage(); }); }
-function filtered() {
-  var b = S.books.slice(), f = S.filter;
-  if (f === 'BD' || f === 'Manga' || f === 'Autres') b = b.filter(function(x) { return x.category === f; });
-  else if (f === 'favorites') b = b.filter(function(x) { return x.favorite; });
-  else if (f === 'reading') b = b.filter(function(x) { return x.status === 'reading'; });
-  else if (f === 'finished') b = b.filter(function(x) { return x.status === 'finished'; });
-  if (S.search) { var q = S.search.toLowerCase(); b = b.filter(function(x) { return x.title.toLowerCase().indexOf(q) >= 0; }); }
-  if (S.sort === 'name') b.sort(function(a, c) { return a.title.localeCompare(c.title); });
-  else if (S.sort === 'lastread') b.sort(function(a, c) { return (c.lastRead || 0) - (a.lastRead || 0); });
-  else b.sort(function(a, c) { return c.dateAdded - a.dateAdded; });
-  return b;
+function loadBooks(){return dAll('books').then(function(b){S.books=b;renderLib();renderResume();uStorage()})}
+function filtered(){var b=S.books.slice(),f=S.filter;if(f==='BD'||f==='Manga'||f==='Autres')b=b.filter(function(x){return x.category===f});else if(f==='favorites')b=b.filter(function(x){return x.favorite});else if(f==='reading')b=b.filter(function(x){return x.status==='reading'});else if(f==='finished')b=b.filter(function(x){return x.status==='finished'});if(S.search){var q=S.search.toLowerCase();b=b.filter(function(x){return x.title.toLowerCase().indexOf(q)>=0})}if(S.sort==='name')b.sort(function(a,c){return a.title.localeCompare(c.title)});else if(S.sort==='lastread')b.sort(function(a,c){return(c.lastRead||0)-(a.lastRead||0)});else b.sort(function(a,c){return c.dateAdded-a.dateAdded});return b}
+var PH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Crect fill='%23ddd' width='100' height='140'/%3E%3Ctext x='50' y='75' text-anchor='middle' fill='%23999' font-size='14'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E";
+function renderLib(){
+  var g=$('bookGrid'),e=$('emptyState'),bks=filtered();
+  if(!bks.length){g.innerHTML='';e.style.display='flex';return}
+  e.style.display='none';
+  g.innerHTML=bks.map(function(bk){var pct=bk.totalPages?Math.round((bk.currentPage/bk.totalPages)*100):0;var bc=bk.status==='unread'?'badge-new':bk.status==='reading'?'badge-reading':'badge-done';var bt=bk.status==='unread'?'Non lu':bk.status==='reading'?'En cours':'Termin\u00e9';var sel=S.selIds.has(bk.id);return'<div class="book-card'+(S.selMode?' selecting':'')+(sel?' selected':'')+'" data-id="'+bk.id+'"><div class="book-select-check">'+(sel?'\u2713':'')+'</div><div class="book-cover-wrap"><img class="book-cover" src="'+(bk.cover||PH)+'" alt="" loading="lazy"><span class="book-badge '+bc+'">'+bt+'</span>'+(bk.favorite?'<span class="book-fav">\u2B50</span>':'')+(bk.status==='reading'?'<div class="book-progress"><div class="book-progress-fill" style="width:'+pct+'%"></div></div>':'')+'</div><div class="book-info"><div class="book-title">'+bk.title+'</div><div class="book-cat">'+bk.category+(bk.status==='reading'?' \u00B7 '+pct+'%':'')+'</div></div></div>'}).join('');
+  g.querySelectorAll('.book-card').forEach(function(card){var id=parseInt(card.dataset.id),lp=null;card.addEventListener('touchstart',function(){lp=setTimeout(function(){if(!S.selMode){S.selMode=true;S.selIds.add(id);renderLib();uMulti()}lp=null},500)});card.addEventListener('touchend',function(){if(lp){clearTimeout(lp);lp=null}});card.addEventListener('click',function(ev){if(S.selMode){ev.preventDefault();if(S.selIds.has(id))S.selIds.delete(id);else S.selIds.add(id);if(!S.selIds.size)S.selMode=false;renderLib();uMulti();return}showDetail(id)})})
 }
-var PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Crect fill='%23ddd' width='100' height='140'/%3E%3Ctext x='50' y='75' text-anchor='middle' fill='%23999' font-size='14'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E";
-function renderLib() {
-  var g = $('bGrid'), e = $('empt'), bks = filtered();
-  if (!bks.length) { g.innerHTML = ''; e.style.display = 'flex'; return; }
-  e.style.display = 'none';
-  g.innerHTML = bks.map(function(bk) {
-    var pct = bk.totalPages ? Math.round((bk.currentPage / bk.totalPages) * 100) : 0;
-    var bc = bk.status === 'unread' ? 'bdg-n' : bk.status === 'reading' ? 'bdg-r' : 'bdg-d';
-    var bt = bk.status === 'unread' ? 'Non lu' : bk.status === 'reading' ? 'En cours' : 'Termin\u00e9';
-    var sel = S.selIds.has(bk.id);
-    return '<div class="card' + (S.selMode ? ' seling' : '') + (sel ? ' seled' : '') + '" data-id="' + bk.id + '">' +
-      '<div class="chk">' + (sel ? '\u2713' : '') + '</div>' +
-      '<div class="cvw"><img class="cv" src="' + (bk.cover || PH) + '" alt="" loading="lazy">' +
-      '<span class="bdg ' + bc + '">' + bt + '</span>' +
-      (bk.favorite ? '<span class="fv">\u2B50</span>' : '') +
-      (bk.status === 'reading' ? '<div class="prg"><div class="prg-f" style="width:' + pct + '%"></div></div>' : '') +
-      '</div><div class="cinf"><div class="ctit">' + bk.title + '</div><div class="ccat">' + bk.category + (bk.status === 'reading' ? ' \u00B7 ' + pct + '%' : '') + '</div></div></div>';
-  }).join('');
-  g.querySelectorAll('.card').forEach(function(card) {
-    var id = parseInt(card.dataset.id), lp = null;
-    card.addEventListener('touchstart', function() {
-      lp = setTimeout(function() { if (!S.selMode) { S.selMode = true; S.selIds.add(id); renderLib(); uMulti(); } lp = null; }, 500);
-    });
-    card.addEventListener('touchend', function() { if (lp) { clearTimeout(lp); lp = null; } });
-    card.addEventListener('click', function(ev) {
-      if (S.selMode) { ev.preventDefault(); if (S.selIds.has(id)) S.selIds.delete(id); else S.selIds.add(id); if (!S.selIds.size) S.selMode = false; renderLib(); uMulti(); return; }
-      showDetail(id);
-    });
-  });
-}
-function renderResume() {
-  var bar = $('resumeBar');
-  var rd = S.books.filter(function(b) { return b.status === 'reading' && b.lastRead; }).sort(function(a, b) { return b.lastRead - a.lastRead; });
-  if (!rd.length) { bar.style.display = 'none'; return; }
-  var bk = rd[0], pct = Math.round((bk.currentPage / bk.totalPages) * 100);
-  bar.style.display = 'block';
-  bar.innerHTML = '<div class="resume" id="resBtn"><img src="' + (bk.cover || '') + '" alt=""><div class="resume-i"><div class="resume-t">' + bk.title + '</div><div class="resume-s">Page ' + (bk.currentPage + 1) + '/' + bk.totalPages + ' \u00B7 ' + pct + '%</div></div><button class="resume-b">Reprendre \u25B6</button></div>';
-  $('resBtn').addEventListener('click', function() { openReader(bk.id); });
-}
-function uMulti() {
-  var bar = $('mBar');
-  if (S.selMode && S.selIds.size > 0) { bar.classList.add('act'); $('mCnt').textContent = S.selIds.size + ' s\u00e9lectionn\u00e9(s)'; }
-  else bar.classList.remove('act');
-}
-$('mNo').addEventListener('click', function() { S.selMode = false; S.selIds.clear(); renderLib(); uMulti(); });
-$('mDel').addEventListener('click', function() {
-  confirm2('Supprimer', 'Supprimer ' + S.selIds.size + ' livre(s) ?', function() {
-    var ids = Array.from(S.selIds), chain = Promise.resolve();
-    ids.forEach(function(id) { chain = chain.then(function() { return dDel('books', id).then(function() { return dDel('bookFiles', id); }); }); });
-    chain.then(function() { S.selMode = false; S.selIds.clear(); uMulti(); return loadBooks(); }).then(function() { toast('Supprim\u00e9 !'); });
-  });
-});
+function renderResume(){var bar=$('resumeBar');var rd=S.books.filter(function(b){return b.status==='reading'&&b.lastRead}).sort(function(a,b){return b.lastRead-a.lastRead});if(!rd.length){bar.style.display='none';return}var bk=rd[0],pct=Math.round((bk.currentPage/bk.totalPages)*100);bar.style.display='block';bar.innerHTML='<div class="lib-resume" id="resBtn"><img src="'+(bk.cover||'')+'" alt=""><div class="lib-resume-info"><div class="lib-resume-title">'+bk.title+'</div><div class="lib-resume-sub">Page '+(bk.currentPage+1)+'/'+bk.totalPages+' \u00B7 '+pct+'%</div></div><button class="lib-resume-btn">Reprendre \u25B6</button></div>';$('resBtn').addEventListener('click',function(){openReader(bk.id)})}
+function uMulti(){var bar=$('multiActions');if(S.selMode&&S.selIds.size>0){bar.classList.add('active');$('multiCount').textContent=S.selIds.size+' s\u00e9lectionn\u00e9(s)'}else bar.classList.remove('active')}
+$('multiCancel').addEventListener('click',function(){S.selMode=false;S.selIds.clear();renderLib();uMulti()});
+$('multiDelete').addEventListener('click',function(){confirm2('Supprimer','Supprimer '+S.selIds.size+' livre(s) ?',function(){var ids=Array.from(S.selIds),chain=Promise.resolve();ids.forEach(function(id){chain=chain.then(function(){return dDel('books',id).then(function(){return dDel('bookFiles',id)})})});chain.then(function(){S.selMode=false;S.selIds.clear();uMulti();return loadBooks()}).then(function(){toast('Supprim\u00e9 !')})})});
 
 /* DETAIL */
-function showDetail(id) {
-  var bk = S.books.find(function(b) { return b.id === id; }); if (!bk) return;
-  var pct = bk.totalPages ? Math.round((bk.currentPage / bk.totalPages) * 100) : 0;
-  var d = $('dtBox');
-  d.innerHTML = '<div class="bdh"><img class="bdcv" src="' + (bk.cover || '') + '" alt=""><div class="bdi"><div class="bdt">' + bk.title + '</div><div class="bdm">' + bk.category + ' \u00B7 ' + bk.totalPages + ' pages \u00B7 ' + bk.fileType.toUpperCase() + '</div><div class="bdp">' + (bk.status === 'reading' ? 'Page ' + (bk.currentPage + 1) + '/' + bk.totalPages + ' (' + pct + '%)' : bk.status === 'finished' ? 'Termin\u00e9 \u2713' : 'Non lu') + '</div></div></div>' +
-    '<div class="bdas">' +
-    '<button class="bda" data-a="read"><span class="dai">' + (bk.status === 'reading' ? '\u25B6\uFE0F' : '\uD83D\uDCD6') + '</span>' + (bk.status === 'reading' ? 'Reprendre' : 'Commencer') + '</button>' +
-    '<button class="bda" data-a="fav"><span class="dai">' + (bk.favorite ? '\u2B50' : '\u2606') + '</span>' + (bk.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris') + '</button>' +
-    '<button class="bda" data-a="coll"><span class="dai">\uD83D\uDCC1</span>' + (bk.collectionId ? 'Changer de collection' : 'Ajouter \u00e0 une collection') + '</button>' +
-    '<button class="bda" data-a="rst"><span class="dai">\uD83D\uDD04</span>Recommencer</button>' +
-    '<button class="bda dng" data-a="del"><span class="dai">\uD83D\uDDD1\uFE0F</span>Supprimer</button></div>';
-  d.querySelector('[data-a="read"]').addEventListener('click', function() { $('dtOv').classList.remove('act'); openReader(id); });
-  d.querySelector('[data-a="fav"]').addEventListener('click', function() { bk.favorite = !bk.favorite; dPut('books', bk).then(function() { $('dtOv').classList.remove('act'); loadBooks(); toast(bk.favorite ? 'Ajout\u00e9 !' : 'Retir\u00e9'); }); });
-  d.querySelector('[data-a="coll"]').addEventListener('click', function() { $('dtOv').classList.remove('act'); showAssign(id); });
-  d.querySelector('[data-a="rst"]').addEventListener('click', function() { bk.currentPage = 0; bk.status = 'unread'; bk.lastRead = null; dPut('books', bk).then(function() { $('dtOv').classList.remove('act'); loadBooks(); toast('R\u00e9initialis\u00e9'); }); });
-  d.querySelector('[data-a="del"]').addEventListener('click', function() { $('dtOv').classList.remove('act'); confirm2('Supprimer', 'Supprimer ce livre ?', function() { dDel('books', id).then(function() { return dDel('bookFiles', id); }).then(function() { loadBooks(); toast('Supprim\u00e9 !'); }); }); });
-  $('dtOv').classList.add('act');
+function showDetail(id){var bk=S.books.find(function(b){return b.id===id});if(!bk)return;var pct=bk.totalPages?Math.round((bk.currentPage/bk.totalPages)*100):0;var d=$('bookDetail');d.innerHTML='<div class="book-detail-header"><img class="book-detail-cover" src="'+(bk.cover||'')+'" alt=""><div class="book-detail-info"><div class="book-detail-title">'+bk.title+'</div><div class="book-detail-meta">'+bk.category+' \u00B7 '+bk.totalPages+' pages \u00B7 '+bk.fileType.toUpperCase()+'</div><div class="book-detail-progress">'+(bk.status==='reading'?'Page '+(bk.currentPage+1)+'/'+bk.totalPages+' ('+pct+'%)':bk.status==='finished'?'Termin\u00e9 \u2713':'Non lu')+'</div></div></div><div class="book-detail-actions"><button class="detail-action" data-a="read"><span class="da-icon">'+(bk.status==='reading'?'\u25B6\uFE0F':'\uD83D\uDCD6')+'</span>'+(bk.status==='reading'?'Reprendre':'Commencer')+'</button><button class="detail-action" data-a="fav"><span class="da-icon">'+(bk.favorite?'\u2B50':'\u2606')+'</span>'+(bk.favorite?'Retirer des favoris':'Ajouter aux favoris')+'</button><button class="detail-action" data-a="coll"><span class="da-icon">\uD83D\uDCC1</span>'+(bk.collectionId?'Changer de collection':'Ajouter \u00e0 une collection')+'</button><button class="detail-action" data-a="rst"><span class="da-icon">\uD83D\uDD04</span>Recommencer</button><button class="detail-action danger" data-a="del"><span class="da-icon">\uD83D\uDDD1\uFE0F</span>Supprimer</button></div>';
+  d.querySelector('[data-a="read"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');openReader(id)});
+  d.querySelector('[data-a="fav"]').addEventListener('click',function(){bk.favorite=!bk.favorite;dPut('books',bk).then(function(){$('bookDetailOverlay').classList.remove('active');loadBooks();toast(bk.favorite?'Ajout\u00e9 !':'Retir\u00e9')})});
+  d.querySelector('[data-a="coll"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');showAssign(id)});
+  d.querySelector('[data-a="rst"]').addEventListener('click',function(){bk.currentPage=0;bk.status='unread';bk.lastRead=null;dPut('books',bk).then(function(){$('bookDetailOverlay').classList.remove('active');loadBooks();toast('R\u00e9initialis\u00e9')})});
+  d.querySelector('[data-a="del"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');confirm2('Supprimer','Supprimer ce livre ?',function(){dDel('books',id).then(function(){return dDel('bookFiles',id)}).then(function(){loadBooks();toast('Supprim\u00e9 !')})})});
+  $('bookDetailOverlay').classList.add('active')
 }
-$('dtOv').addEventListener('click', function(e) { if (e.target === e.currentTarget) e.currentTarget.classList.remove('act'); });
+$('bookDetailOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)e.currentTarget.classList.remove('active')});
 
 /* CONFIRM */
-function confirm2(title, msg, onOk) {
-  var b = $('cfBox');
-  b.innerHTML = '<h3>' + title + '</h3><p style="font-size:13px;color:var(--txs);margin-bottom:20px">' + msg + '</p><div class="mbtns"><button class="mbtn mbtn-s" id="_cfN">Annuler</button><button class="mbtn mbtn-p" style="background:var(--dan)" id="_cfY">Confirmer</button></div>';
-  $('cfOv').classList.add('act');
-  $('_cfN').addEventListener('click', function() { $('cfOv').classList.remove('act'); }, { once: true });
-  $('_cfY').addEventListener('click', function() { $('cfOv').classList.remove('act'); onOk(); }, { once: true });
-}
-$('cfOv').addEventListener('click', function(e) { if (e.target === e.currentTarget) e.currentTarget.classList.remove('act'); });
+function confirm2(title,msg,onOk){var b=$('confirmBox');b.innerHTML='<h3>'+title+'</h3><p style="font-size:13px;color:var(--text-sec);margin-bottom:20px">'+msg+'</p><div class="modal-btns"><button class="modal-btn secondary" id="_cfN">Annuler</button><button class="modal-btn primary" style="background:var(--danger)" id="_cfY">Confirmer</button></div>';$('confirmOverlay').classList.add('active');$('_cfN').addEventListener('click',function(){$('confirmOverlay').classList.remove('active')},{once:true});$('_cfY').addEventListener('click',function(){$('confirmOverlay').classList.remove('active');onOk()},{once:true})}
+$('confirmOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)e.currentTarget.classList.remove('active')});
 
 /* ASSIGN COLLECTION */
-function showAssign(bookId) {
-  dAll('collections').then(function(colls) {
-    var bk = S.books.find(function(b) { return b.id === bookId; });
-    var sel = bk.collectionId || 0;
-    var b = $('asBox');
-    b.innerHTML = '<h3>Collection</h3><div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:16px">' +
-      '<button class="mcat' + (!bk.collectionId ? ' sel' : '') + '" data-ci="0" style="font-style:italic;color:var(--txs)">Aucune</button>' +
-      colls.map(function(c) { return '<button class="mcat' + (bk.collectionId === c.id ? ' sel' : '') + '" data-ci="' + c.id + '">' + c.name + '</button>'; }).join('') +
-      '</div><div class="mbtns"><button class="mbtn mbtn-s" id="_asN">Annuler</button><button class="mbtn mbtn-p" id="_asY">Valider</button></div>';
-    $('asOv').classList.add('act');
-    b.querySelectorAll('[data-ci]').forEach(function(i) { i.addEventListener('click', function() { b.querySelectorAll('[data-ci]').forEach(function(x) { x.classList.remove('sel'); }); i.classList.add('sel'); sel = parseInt(i.dataset.ci); }); });
-    $('_asN').addEventListener('click', function() { $('asOv').classList.remove('act'); }, { once: true });
-    $('_asY').addEventListener('click', function() { bk.collectionId = sel || null; dPut('books', bk).then(function() { $('asOv').classList.remove('act'); loadBooks(); toast('Collection mise \u00e0 jour'); }); }, { once: true });
-  });
-}
-$('asOv').addEventListener('click', function(e) { if (e.target === e.currentTarget) e.currentTarget.classList.remove('act'); });
+function showAssign(bookId){dAll('collections').then(function(colls){var bk=S.books.find(function(b){return b.id===bookId});var sel=bk.collectionId||0;var b=$('assignBox');b.innerHTML='<h3>Collection</h3><div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:16px"><button class="cat-option'+((!bk.collectionId)?' selected':'')+'" data-ci="0" style="font-style:italic;color:var(--text-sec)">Aucune</button>'+colls.map(function(c){return'<button class="cat-option'+(bk.collectionId===c.id?' selected':'')+'" data-ci="'+c.id+'">'+c.name+'</button>'}).join('')+'</div><div class="modal-btns"><button class="modal-btn secondary" id="_asN">Annuler</button><button class="modal-btn primary" id="_asY">Valider</button></div>';$('assignOverlay').classList.add('active');b.querySelectorAll('[data-ci]').forEach(function(i){i.addEventListener('click',function(){b.querySelectorAll('[data-ci]').forEach(function(x){x.classList.remove('selected')});i.classList.add('selected');sel=parseInt(i.dataset.ci)})});$('_asN').addEventListener('click',function(){$('assignOverlay').classList.remove('active')},{once:true});$('_asY').addEventListener('click',function(){bk.collectionId=sel||null;dPut('books',bk).then(function(){$('assignOverlay').classList.remove('active');loadBooks();toast('Collection mise \u00e0 jour')})},{once:true})})}
+$('assignOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)e.currentTarget.classList.remove('active')});
 
 /* FILTERS */
-$('fbar').addEventListener('click', function(e) { var b = e.target.closest('.fb'); if (!b) return; document.querySelectorAll('.fb').forEach(function(x) { x.classList.remove('act'); }); b.classList.add('act'); S.filter = b.dataset.f; renderLib(); });
-$('sInp').addEventListener('input', function(e) { S.search = e.target.value; renderLib(); });
-$('sSort').addEventListener('change', function(e) { S.sort = e.target.value; renderLib(); });
+$('filterBar').addEventListener('click',function(e){var b=e.target.closest('.filter-btn');if(!b)return;document.querySelectorAll('.filter-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.filter=b.dataset.filter;renderLib()});
+$('searchInput').addEventListener('input',function(e){S.search=e.target.value;renderLib()});
+$('sortSelect').addEventListener('change',function(e){S.sort=e.target.value;renderLib()});
 
 /* COLLECTIONS */
-function loadColls() { return dAll('collections').then(function(c) { S.colls = c; renderColls(); }); }
-function renderColls() {
-  var list = $('cList'), cols = ['#4a9eff','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
-  if (!S.colls.length) { list.innerHTML = '<div class="empty"><p>Aucune collection.<br>Cr\u00e9e-en une ci-dessus !</p></div>'; return; }
-  list.innerHTML = S.colls.map(function(c, i) {
-    var cnt = S.books.filter(function(b) { return b.collectionId === c.id; }).length;
-    return '<div class="cc" data-ci="' + c.id + '"><div class="ccol" style="background:' + cols[i % cols.length] + '">' + c.name[0].toUpperCase() + '</div><div class="cci"><div class="ccn">' + c.name + '</div><div class="ccc">' + cnt + ' livre(s)</div></div><button class="ccdel" data-dl="' + c.id + '">\u2715</button></div>';
-  }).join('');
-  list.querySelectorAll('.cc').forEach(function(card) {
-    card.addEventListener('click', function(e) { if (e.target.closest('.ccdel')) return; viewColl(parseInt(card.dataset.ci)); });
-  });
-  list.querySelectorAll('.ccdel').forEach(function(btn) {
-    btn.addEventListener('click', function(e) { e.stopPropagation(); delColl(parseInt(btn.dataset.dl)); });
-  });
-}
-$('cAddBtn').addEventListener('click', function() { var n = $('cInp').value.trim(); if (!n) return; dPut('collections', { name: n }).then(function() { $('cInp').value = ''; loadColls(); toast('Collection cr\u00e9\u00e9e !'); }); });
-function delColl(id) { confirm2('Supprimer', 'Supprimer cette collection ?', function() { var chain = Promise.resolve(); S.books.filter(function(b) { return b.collectionId === id; }).forEach(function(b) { chain = chain.then(function() { b.collectionId = null; return dPut('books', b); }); }); chain.then(function() { return dDel('collections', id); }).then(function() { loadColls(); loadBooks(); toast('Supprim\u00e9e'); }); }); }
-function viewColl(id) {
-  S.viewColl = id; var c = S.colls.find(function(x) { return x.id === id; });
-  $('cMain').style.display = 'none'; $('cDet').style.display = 'block';
-  $('cDetTit').textContent = c ? c.name : '';
-  var bks = S.books.filter(function(b) { return b.collectionId === id; }), g = $('cDetGrid');
-  if (!bks.length) { g.innerHTML = '<div class="empty"><p>Aucun livre ici.</p></div>'; return; }
-  g.innerHTML = bks.map(function(bk) {
-    return '<div class="card" data-id="' + bk.id + '"><div class="cvw"><img class="cv" src="' + (bk.cover || PH) + '" alt="" loading="lazy">' + (bk.favorite ? '<span class="fv">\u2B50</span>' : '') + '</div><div class="cinf"><div class="ctit">' + bk.title + '</div><div class="ccat">' + bk.category + '</div></div></div>';
-  }).join('');
-  g.querySelectorAll('.card').forEach(function(card) { card.addEventListener('click', function() { showDetail(parseInt(card.dataset.id)); }); });
-}
-$('cBkBtn').addEventListener('click', function() { $('cMain').style.display = 'block'; $('cDet').style.display = 'none'; S.viewColl = null; });
+function loadColls(){return dAll('collections').then(function(c){S.colls=c;renderColls()})}
+function renderColls(){var list=$('collList'),cols=['#4a9eff','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];if(!S.colls.length){list.innerHTML='<div class="empty-state"><p>Aucune collection.<br>Cr\u00e9e-en une ci-dessus !</p></div>';return}list.innerHTML=S.colls.map(function(c,i){var cnt=S.books.filter(function(b){return b.collectionId===c.id}).length;return'<div class="coll-card" data-ci="'+c.id+'"><div class="coll-color" style="background:'+cols[i%cols.length]+'">'+c.name[0].toUpperCase()+'</div><div class="coll-info"><div class="coll-name">'+c.name+'</div><div class="coll-count">'+cnt+' livre(s)</div></div><button class="coll-del" data-dl="'+c.id+'">\u2715</button></div>'}).join('');list.querySelectorAll('.coll-card').forEach(function(card){card.addEventListener('click',function(e){if(e.target.closest('.coll-del'))return;viewColl(parseInt(card.dataset.ci))})});list.querySelectorAll('.coll-del').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();delColl(parseInt(btn.dataset.dl))})})}
+$('collAddBtn').addEventListener('click',function(){var n=$('collNameInput').value.trim();if(!n)return;dPut('collections',{name:n}).then(function(){$('collNameInput').value='';loadColls();toast('Collection cr\u00e9\u00e9e !')})});
+function delColl(id){confirm2('Supprimer','Supprimer cette collection ?',function(){var chain=Promise.resolve();S.books.filter(function(b){return b.collectionId===id}).forEach(function(b){chain=chain.then(function(){b.collectionId=null;return dPut('books',b)})});chain.then(function(){return dDel('collections',id)}).then(function(){loadColls();loadBooks();toast('Supprim\u00e9e')})})}
+function viewColl(id){S.viewColl=id;var c=S.colls.find(function(x){return x.id===id});$('collMainView').style.display='none';$('collDetailView').style.display='block';$('collDetailTitle').textContent=c?c.name:'';var bks=S.books.filter(function(b){return b.collectionId===id}),g=$('collDetailGrid');if(!bks.length){g.innerHTML='<div class="empty-state"><p>Aucun livre ici.</p></div>';return}g.innerHTML=bks.map(function(bk){return'<div class="book-card" data-id="'+bk.id+'"><div class="book-cover-wrap"><img class="book-cover" src="'+(bk.cover||PH)+'" alt="" loading="lazy">'+(bk.favorite?'<span class="book-fav">\u2B50</span>':'')+'</div><div class="book-info"><div class="book-title">'+bk.title+'</div><div class="book-cat">'+bk.category+'</div></div></div>'}).join('');g.querySelectorAll('.book-card').forEach(function(card){card.addEventListener('click',function(){showDetail(parseInt(card.dataset.id))})})}
+$('collBackBtn').addEventListener('click',function(){$('collMainView').style.display='block';$('collDetailView').style.display='none';S.viewColl=null});
 
-/* ═══ READER ═══ */
-function openReader(bookId) {
-  var bk = S.books.find(function(b) { return b.id === bookId; }); if (!bk) return;
-  $('dtOv').classList.remove('act');
-  showLd('Ouverture...');
-  dGet('bookFiles', bookId).then(function(fr) {
-    if (!fr) { hideLd(); toast('Fichier introuvable'); return; }
+/* === READER === */
+function openReader(bookId){
+  var bk=S.books.find(function(b){return b.id===bookId});if(!bk)return;
+  $('bookDetailOverlay').classList.remove('active');showLd('Ouverture...');
+  dGet('bookFiles',bookId).then(function(fr){
+    if(!fr){hideLd();toast('Fichier introuvable');return}
     var pagesP;
-    if (bk.fileType === 'cbz') pagesP = parseCBZPages(fr.data);
-    else if (bk.fileType === 'pdf') pagesP = parsePDFPages(fr.data);
-    else if (bk.fileType === 'epub') pagesP = parseEPUBPages(fr.data);
-    else { hideLd(); toast('Format non support\u00e9'); return; }
-    return pagesP.then(function(pages) {
-      S.rPages = pages; S.rBook = bk;
-      S.rPage = bk.currentPage || 0;
-      S.rDir = bk.category === 'Manga' ? 'rtl' : S.dDir;
-      S.rMode = S.dMode; S.rScale = 1; S.rTx = 0; S.rTy = 0; S.rFS = false;
-      bk.status = 'reading'; bk.lastRead = Date.now();
-      return dPut('books', bk);
-    }).then(function() {
-      $('rTit').textContent = bk.title;
-      var sl = $('rSl'); sl.max = S.rPages.length; sl.value = S.rPage + 1;
-      sl.style.direction = S.rDir === 'rtl' ? 'rtl' : 'ltr';
-      document.querySelectorAll('[data-rm]').forEach(function(b) { b.classList.toggle('act', b.dataset.rm === S.rMode); });
-      document.querySelectorAll('[data-rd]').forEach(function(b) { b.classList.toggle('act', b.dataset.rd === S.rDir); });
-      $('reader').classList.add('act');
-      $('hdr').classList.add('hide'); $('nav').classList.add('hide');
-      $('fabBtn').style.display = 'none';
-      hideLd();
-      renderPage();
-      initRTouch();
-    });
-  }).catch(function(err) { hideLd(); console.error(err); toast('Erreur de lecture'); });
+    if(bk.fileType==='cbz')pagesP=parseCBZPages(fr.data);
+    else if(bk.fileType==='pdf')pagesP=parsePDFPages(fr.data);
+    else if(bk.fileType==='epub')pagesP=parseEPUBPages(fr.data);
+    else{hideLd();toast('Format non support\u00e9');return}
+    return pagesP.then(function(pages){S.rPages=pages;S.rBook=bk;S.rPage=bk.currentPage||0;S.rDir=bk.category==='Manga'?'rtl':S.dDir;S.rMode=S.dMode;S.rScale=1;S.rTx=0;S.rTy=0;S.rFS=false;bk.status='reading';bk.lastRead=Date.now();return dPut('books',bk)}).then(function(){
+      $('readerTitle').textContent=bk.title;var sl=$('readerSlider');sl.max=S.rPages.length;sl.value=S.rPage+1;sl.style.direction=S.rDir==='rtl'?'rtl':'ltr';
+      document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('active',b.dataset.mode===S.rMode)});
+      document.querySelectorAll('[data-dir]').forEach(function(b){b.classList.toggle('active',b.dataset.dir===S.rDir)});
+      $('readerView').classList.add('active');$('appHeader').classList.add('hidden');$('bottomNav').classList.add('hidden');$('fabAdd').style.display='none';
+      hideLd();renderPage();initRTouch()
+    })
+  }).catch(function(err){hideLd();console.error(err);toast('Erreur de lecture')})
 }
 
-function renderPage() {
-  if (!S.rPages.length) return;
-  var p = S.rPage;
-  var i1 = $('rI1'), i2 = $('rI2'), c1 = $('rC1'), c2 = $('rC2'), cont = $('rcont'), area = $('rArea');
-  S.rScale = 1; S.rTx = 0; S.rTy = 0; cont.style.transform = '';
-  i1.style.display = 'none'; i2.style.display = 'none';
-  c1.style.display = 'none'; c2.style.display = 'none';
-  var isLand = window.innerWidth > window.innerHeight;
-  var dbl = (S.rMode === 'double' || (S.rMode === 'single' && isLand)) && S.rPages.length > 1;
-  cont.classList.toggle('dbl', dbl);
-  var pg = S.rPages[p];
-  var pg2 = (dbl && p + 1 < S.rPages.length) ? S.rPages[p + 1] : null;
-  var done;
-  if (pg.type === 'image') {
-    i1.src = pg.url; i1.style.display = 'block';
-    i1.style.maxWidth = dbl ? '50%' : '100%';
-    if (pg2 && pg2.type === 'image') {
-      i2.src = pg2.url; i2.style.display = 'block'; i2.style.maxWidth = '50%';
-      i1.style.order = S.rDir === 'rtl' ? '2' : '1';
-      i2.style.order = S.rDir === 'rtl' ? '1' : '2';
-    }
-    done = Promise.resolve();
-  } else if (pg.type === 'pdf') {
-    var dpr = window.devicePixelRatio || 1;
-    var mw = dbl ? area.clientWidth / 2 : area.clientWidth;
-    var mh = area.clientHeight;
-    done = renderPDF(c1, pg, mw, mh, dpr).then(function() {
-      c1.style.display = 'block'; c1.style.maxWidth = dbl ? '50%' : '100%';
-      if (pg2 && pg2.type === 'pdf') {
-        return renderPDF(c2, pg2, mw, mh, dpr).then(function() {
-          c2.style.display = 'block'; c2.style.maxWidth = '50%';
-          c1.style.order = S.rDir === 'rtl' ? '2' : '1';
-          c2.style.order = S.rDir === 'rtl' ? '1' : '2';
-        });
-      }
-    });
-  } else { done = Promise.resolve(); }
-  done.then(function() {
-    $('rPn').textContent = (p + 1) + '/' + S.rPages.length;
-    $('rPi').textContent = (p + 1) + ' / ' + S.rPages.length;
-    $('rSl').value = p + 1;
-    if (S.rBook) {
-      S.rBook.currentPage = p;
-      if (p >= S.rPages.length - 1) S.rBook.status = 'finished';
-      S.rBook.lastRead = Date.now();
-      dPut('books', S.rBook);
-    }
-  });
+function renderPage(){
+  if(!S.rPages.length)return;var p=S.rPage;
+  var i1=$('readerImg1'),i2=$('readerImg2'),c1=$('readerCanvas1'),c2=$('readerCanvas2'),cont=$('readerContent'),area=$('readerContentArea');
+  S.rScale=1;S.rTx=0;S.rTy=0;cont.style.transform='';
+  i1.style.display='none';i2.style.display='none';c1.style.display='none';c2.style.display='none';
+  var isLand=window.innerWidth>window.innerHeight;
+  var dbl=(S.rMode==='double'||(S.rMode==='single'&&isLand))&&S.rPages.length>1;
+  cont.classList.toggle('double-page',dbl);
+  var pg=S.rPages[p],pg2=(dbl&&p+1<S.rPages.length)?S.rPages[p+1]:null,done;
+  if(pg.type==='image'){
+    i1.src=pg.url;i1.style.display='block';i1.style.maxWidth=dbl?'50%':'100%';
+    if(pg2&&pg2.type==='image'){i2.src=pg2.url;i2.style.display='block';i2.style.maxWidth='50%';i1.style.order=S.rDir==='rtl'?'2':'1';i2.style.order=S.rDir==='rtl'?'1':'2'}
+    done=Promise.resolve()
+  }else if(pg.type==='pdf'){
+    var dpr=window.devicePixelRatio||1;var mw=dbl?area.clientWidth/2:area.clientWidth;var mh=area.clientHeight;
+    done=renderPDF(c1,pg,mw,mh,dpr).then(function(){c1.style.display='block';c1.style.maxWidth=dbl?'50%':'100%';if(pg2&&pg2.type==='pdf')return renderPDF(c2,pg2,mw,mh,dpr).then(function(){c2.style.display='block';c2.style.maxWidth='50%';c1.style.order=S.rDir==='rtl'?'2':'1';c2.style.order=S.rDir==='rtl'?'1':'2'})})
+  }else done=Promise.resolve();
+  done.then(function(){$('readerPageNum').textContent=(p+1)+'/'+S.rPages.length;$('readerPageInfo').textContent=(p+1)+' / '+S.rPages.length;$('readerSlider').value=p+1;if(S.rBook){S.rBook.currentPage=p;if(p>=S.rPages.length-1)S.rBook.status='finished';S.rBook.lastRead=Date.now();dPut('books',S.rBook)}})
 }
-
-function renderPDF(canvas, pg, mw, mh, dpr) {
-  return pg.pdfDoc.getPage(pg.pageNum).then(function(page) {
-    var vp = page.getViewport({ scale: 1 });
-    var fit = Math.min(mw / vp.width, mh / vp.height);
-    var rv = page.getViewport({ scale: fit * dpr });
-    canvas.width = rv.width; canvas.height = rv.height;
-    canvas.style.width = Math.floor(rv.width / dpr) + 'px';
-    canvas.style.height = Math.floor(rv.height / dpr) + 'px';
-    return page.render({ canvasContext: canvas.getContext('2d'), viewport: rv }).promise;
-  });
-}
+function renderPDF(canvas,pg,mw,mh,dpr){return pg.pdfDoc.getPage(pg.pageNum).then(function(page){var vp=page.getViewport({scale:1});var fit=Math.min(mw/vp.width,mh/vp.height);var rv=page.getViewport({scale:fit*dpr});canvas.width=rv.width;canvas.height=rv.height;canvas.style.width=Math.floor(rv.width/dpr)+'px';canvas.style.height=Math.floor(rv.height/dpr)+'px';return page.render({canvasContext:canvas.getContext('2d'),viewport:rv}).promise})}
 
 /* READER TOUCH */
-function initRTouch() {
-  var area = $('rArea');
-  if (S.rAC) S.rAC.abort();
-  S.rAC = new AbortController();
-  var opt = { passive: false, signal: S.rAC.signal };
-  area.addEventListener('touchstart', tStart, opt);
-  area.addEventListener('touchmove', tMove, opt);
-  area.addEventListener('touchend', tEnd, opt);
-}
-function dst(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-function tStart(e) {
-  if (e.touches.length === 2) {
-    e.preventDefault(); S.pinching = true;
-    S.pinchD = dst(e.touches[0], e.touches[1]); S.pinchS = S.rScale;
-  } else if (e.touches.length === 1) {
-    S.tSX = e.touches[0].clientX; S.tSY = e.touches[0].clientY; S.tST = Date.now();
-    if (S.rScale > 1.05) { S.panning = true; S.panX = e.touches[0].clientX; S.panY = e.touches[0].clientY; e.preventDefault(); }
-  }
-}
-function tMove(e) {
-  if (S.pinching && e.touches.length === 2) {
-    e.preventDefault();
-    var d = dst(e.touches[0], e.touches[1]);
-    S.rScale = Math.max(1, Math.min(5, S.pinchS * (d / S.pinchD)));
-    if (S.rScale <= 1.05) { S.rScale = 1; S.rTx = 0; S.rTy = 0; }
-    applyTr();
-  } else if (S.panning && e.touches.length === 1 && S.rScale > 1.05) {
-    e.preventDefault();
-    S.rTx += e.touches[0].clientX - S.panX;
-    S.rTy += e.touches[0].clientY - S.panY;
-    S.panX = e.touches[0].clientX; S.panY = e.touches[0].clientY;
-    applyTr();
-  }
-}
-function tEnd(e) {
-  if (S.pinching) { S.pinching = false; if (S.rScale <= 1.05) { S.rScale = 1; S.rTx = 0; S.rTy = 0; applyTr(); } return; }
-  S.panning = false; if (e.touches.length > 0) return;
-  var dt = Date.now() - S.tST;
-  var dx = e.changedTouches[0].clientX - S.tSX;
-  var dy = e.changedTouches[0].clientY - S.tSY;
-  var adx = Math.abs(dx), ady = Math.abs(dy);
-  if (dt < 250 && adx < 15 && ady < 15) {
-    var now = Date.now();
-    if (now - S.lastTap < 300) { S.lastTap = 0; toggleFS(); return; }
-    S.lastTap = now;
-  }
-  if (S.rScale <= 1.05 && dt < 400 && adx > 50 && adx > ady * 1.5) {
-    if (S.rDir === 'rtl') { dx > 0 ? goNext() : goPrev(); }
-    else { dx < 0 ? goNext() : goPrev(); }
-  }
-}
-function applyTr() { $('rcont').style.transform = 'scale(' + S.rScale + ') translate(' + (S.rTx / S.rScale) + 'px,' + (S.rTy / S.rScale) + 'px)'; }
-function toggleFS() {
-  S.rFS = !S.rFS;
-  $('rHdr').classList.toggle('fsh', S.rFS);
-  $('rFt').classList.toggle('fsh', S.rFS);
-  $('rSet').classList.remove('act');
-}
-function goNext() {
-  var isLand = window.innerWidth > window.innerHeight;
-  var step = (S.rMode === 'double' || (S.rMode === 'single' && isLand)) ? 2 : 1;
-  if (S.rPage + step < S.rPages.length) { S.rPage += step; renderPage(); }
-  else if (S.rPage < S.rPages.length - 1) { S.rPage = S.rPages.length - 1; renderPage(); }
-}
-function goPrev() {
-  var isLand = window.innerWidth > window.innerHeight;
-  var step = (S.rMode === 'double' || (S.rMode === 'single' && isLand)) ? 2 : 1;
-  if (S.rPage - step >= 0) { S.rPage -= step; renderPage(); }
-  else if (S.rPage > 0) { S.rPage = 0; renderPage(); }
-}
-
-$('rSl').addEventListener('input', function(e) { S.rPage = parseInt(e.target.value) - 1; renderPage(); });
-$('rBk').addEventListener('click', closeReader);
-function closeReader() {
-  S.rPages.forEach(function(p) { if (p.type === 'image' && p.url && p.url.indexOf('blob:') === 0) URL.revokeObjectURL(p.url); });
-  S.rPages = []; S.rBook = null;
-  if (S.rAC) S.rAC.abort();
-  $('reader').classList.remove('act');
-  $('hdr').classList.remove('hide'); $('nav').classList.remove('hide');
-  $('fabBtn').style.display = 'flex';
-  $('rSet').classList.remove('act');
-  $('rcont').style.transform = '';
-  $('rArea').style.filter = '';
-  loadBooks();
-}
-
-$('rSBtn').addEventListener('click', function() { $('rSet').classList.toggle('act'); });
-document.querySelectorAll('[data-rm]').forEach(function(b) { b.addEventListener('click', function() { document.querySelectorAll('[data-rm]').forEach(function(x) { x.classList.remove('act'); }); b.classList.add('act'); S.rMode = b.dataset.rm; renderPage(); }); });
-document.querySelectorAll('[data-rd]').forEach(function(b) { b.addEventListener('click', function() { document.querySelectorAll('[data-rd]').forEach(function(x) { x.classList.remove('act'); }); b.classList.add('act'); S.rDir = b.dataset.rd; $('rSl').style.direction = S.rDir; renderPage(); }); });
-$('rBri').addEventListener('input', function(e) { S.bri = parseInt(e.target.value); $('rArea').style.filter = 'brightness(' + S.bri + '%)'; });
-
-var onOr = function() { if (S.rBook) setTimeout(renderPage, 200); };
-window.addEventListener('orientationchange', onOr);
-try { window.matchMedia('(orientation:landscape)').addEventListener('change', onOr); } catch(e) {}
+function initRTouch(){var area=$('readerContentArea');if(S.rAC)S.rAC.abort();S.rAC=new AbortController();var opt={passive:false,signal:S.rAC.signal};area.addEventListener('touchstart',tStart,opt);area.addEventListener('touchmove',tMove,opt);area.addEventListener('touchend',tEnd,opt)}
+function dst(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+function tStart(e){if(e.touches.length===2){e.preventDefault();S.pinching=true;S.pinchD=dst(e.touches[0],e.touches[1]);S.pinchS=S.rScale}else if(e.touches.length===1){S.tSX=e.touches[0].clientX;S.tSY=e.touches[0].clientY;S.tST=Date.now();if(S.rScale>1.05){S.panning=true;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;e.preventDefault()}}}
+function tMove(e){if(S.pinching&&e.touches.length===2){e.preventDefault();var d=dst(e.touches[0],e.touches[1]);S.rScale=Math.max(1,Math.min(5,S.pinchS*(d/S.pinchD)));if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0}applyTr()}else if(S.panning&&e.touches.length===1&&S.rScale>1.05){e.preventDefault();S.rTx+=e.touches[0].clientX-S.panX;S.rTy+=e.touches[0].clientY-S.panY;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;applyTr()}}
+function tEnd(e){if(S.pinching){S.pinching=false;if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0;applyTr()}return}S.panning=false;if(e.touches.length>0)return;var dt=Date.now()-S.tST;var dx=e.changedTouches[0].clientX-S.tSX;var dy=e.changedTouches[0].clientY-S.tSY;var adx=Math.abs(dx),ady=Math.abs(dy);if(dt<250&&adx<15&&ady<15){var now=Date.now();if(now-S.lastTap<300){S.lastTap=0;toggleFS();return}S.lastTap=now}if(S.rScale<=1.05&&dt<400&&adx>50&&adx>ady*1.5){if(S.rDir==='rtl'){dx>0?goNext():goPrev()}else{dx<0?goNext():goPrev()}}}
+function applyTr(){$('readerContent').style.transform='scale('+S.rScale+') translate('+(S.rTx/S.rScale)+'px,'+(S.rTy/S.rScale)+'px)'}
+function toggleFS(){S.rFS=!S.rFS;$('readerHeader').classList.toggle('fs-hidden',S.rFS);$('readerFooter').classList.toggle('fs-hidden',S.rFS);$('readerSettingsPanel').classList.remove('active')}
+function goNext(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage+step<S.rPages.length){S.rPage+=step;renderPage()}else if(S.rPage<S.rPages.length-1){S.rPage=S.rPages.length-1;renderPage()}}
+function goPrev(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage-step>=0){S.rPage-=step;renderPage()}else if(S.rPage>0){S.rPage=0;renderPage()}}
+$('readerSlider').addEventListener('input',function(e){S.rPage=parseInt(e.target.value)-1;renderPage()});
+$('readerBack').addEventListener('click',closeReader);
+function closeReader(){S.rPages.forEach(function(p){if(p.type==='image'&&p.url&&p.url.indexOf('blob:')===0)URL.revokeObjectURL(p.url)});S.rPages=[];S.rBook=null;if(S.rAC)S.rAC.abort();$('readerView').classList.remove('active');$('appHeader').classList.remove('hidden');$('bottomNav').classList.remove('hidden');$('fabAdd').style.display='flex';$('readerSettingsPanel').classList.remove('active');$('readerContent').style.transform='';$('readerContentArea').style.filter='';loadBooks()}
+$('readerSettingsBtn').addEventListener('click',function(){$('readerSettingsPanel').classList.toggle('active')});
+document.querySelectorAll('[data-mode]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-mode]').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.rMode=b.dataset.mode;renderPage()})});
+document.querySelectorAll('[data-dir]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-dir]').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.rDir=b.dataset.dir;$('readerSlider').style.direction=S.rDir;renderPage()})});
+$('brightnessSlider').addEventListener('input',function(e){S.bri=parseInt(e.target.value);$('readerContentArea').style.filter='brightness('+S.bri+'%)'});
+var onOr=function(){if(S.rBook)setTimeout(renderPage,200)};window.addEventListener('orientationchange',onOr);try{window.matchMedia('(orientation:landscape)').addEventListener('change',onOr)}catch(e){}
 
 /* SETTINGS */
-var tgl = $('tglTh');
-tgl.addEventListener('click', function() { S.theme = S.theme === 'light' ? 'dark' : 'light'; document.body.dataset.theme = S.theme; tgl.classList.toggle('on', S.theme === 'dark'); localStorage.setItem('hr_theme', S.theme); });
-$('sGrd').addEventListener('change', function(e) { S.gs = e.target.value; document.documentElement.style.setProperty('--gs', S.gs + 'px'); localStorage.setItem('hr_gs', S.gs); });
-$('sDir').addEventListener('change', function(e) { S.dDir = e.target.value; localStorage.setItem('hr_dDir', S.dDir); });
-$('sMod').addEventListener('change', function(e) { S.dMode = e.target.value; localStorage.setItem('hr_dMode', S.dMode); });
-
-function uStorage() { try { if ('estimate' in navigator.storage) navigator.storage.estimate().then(function(e) { $('stInfo').textContent = (e.usage / (1024*1024)).toFixed(1) + ' Mo'; $('stFl').style.width = ((e.usage / e.quota) * 100).toFixed(1) + '%'; }); } catch(e) {} }
-
-function loadSet() {
-  S.theme = localStorage.getItem('hr_theme') || 'light'; document.body.dataset.theme = S.theme; tgl.classList.toggle('on', S.theme === 'dark');
-  S.gs = localStorage.getItem('hr_gs') || '110'; document.documentElement.style.setProperty('--gs', S.gs + 'px'); $('sGrd').value = S.gs;
-  S.dDir = localStorage.getItem('hr_dDir') || 'ltr'; $('sDir').value = S.dDir;
-  S.dMode = localStorage.getItem('hr_dMode') || 'single'; $('sMod').value = S.dMode;
-}
+var tgl=$('toggleTheme');
+tgl.addEventListener('click',function(){S.theme=S.theme==='light'?'dark':'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');localStorage.setItem('hr_theme',S.theme)});
+$('gridSizeSelect').addEventListener('change',function(e){S.gs=e.target.value;document.documentElement.style.setProperty('--grid-size',S.gs+'px');localStorage.setItem('hr_gs',S.gs)});
+$('defaultDirection').addEventListener('change',function(e){S.dDir=e.target.value;localStorage.setItem('hr_dDir',S.dDir)});
+$('defaultMode').addEventListener('change',function(e){S.dMode=e.target.value;localStorage.setItem('hr_dMode',S.dMode)});
+function uStorage(){try{if('estimate' in navigator.storage)navigator.storage.estimate().then(function(e){$('storageInfo').textContent=(e.usage/(1024*1024)).toFixed(1)+' Mo';$('storageFill').style.width=((e.usage/e.quota)*100).toFixed(1)+'%'})}catch(e){}}
+function loadSet(){S.theme=localStorage.getItem('hr_theme')||'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');S.gs=localStorage.getItem('hr_gs')||'110';document.documentElement.style.setProperty('--grid-size',S.gs+'px');$('gridSizeSelect').value=S.gs;S.dDir=localStorage.getItem('hr_dDir')||'ltr';$('defaultDirection').value=S.dDir;S.dMode=localStorage.getItem('hr_dMode')||'single';$('defaultMode').value=S.dMode}
 
 /* SW + AUTO UPDATE */
-function initSW() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('sw.js').then(function(reg) {
-    setInterval(function() { reg.update(); }, 60000);
-  }).catch(function() {});
-  navigator.serviceWorker.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'SW_UPDATED') {
-      $('updBanner').classList.add('show');
-    }
-  });
-}
-$('updBtn').addEventListener('click', function() { window.location.reload(); });
+function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(function(reg){setInterval(function(){reg.update()},60000)}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
+$('updateBtn').addEventListener('click',function(){window.location.reload()});
 
 /* INIT */
-uClock(); setInterval(uClock, 30000); uBat(); loadSet();
-openDB().then(function() { return loadBooks(); }).then(function() { return loadColls(); }).then(function() {
-  initArch(); initSW();
-  console.log('[HOME READER] v' + VER + ' ready');
-}).catch(function(err) { console.error('[HR] init:', err); toast('Erreur de d\u00e9marrage'); });
+uClock();setInterval(uClock,30000);uBat();loadSet();
+openDB().then(function(){return loadBooks()}).then(function(){return loadColls()}).then(function(){initArch();initSW();console.log('[HOME READER] v'+VER+' ready')}).catch(function(err){console.error('[HR] init:',err);toast('Erreur de d\u00e9marrage')});
 </script>
 </body>
 </html>
