@@ -337,9 +337,9 @@ body {
 .reader-page-info { color: rgba(255,255,255,0.7); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .reader-settings-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 8px; }
 .reader-content-area { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; }
-#readerContent { display: flex; align-items: center; justify-content: center; transform-origin: 0 0; will-change: transform; height: 100%; width: 100%; }
-#readerContent img { max-height: 100%; max-width: 100%; object-fit: contain; display: none; }
-#readerContent canvas { max-height: 100%; object-fit: contain; display: none; }
+#readerContent { display: flex; align-items: center; justify-content: center; transform-origin: 0 0; height: 100%; width: 100%; }
+#readerContent img { max-height: 100%; max-width: 100%; object-fit: contain; display: none; image-rendering: auto; -webkit-image-rendering: optimizeQuality; }
+#readerContent canvas { max-height: 100%; object-fit: contain; display: none; image-rendering: auto; }
 #readerContent.double-page { gap: 2px; }
 .reader-footer { background: rgba(0,0,0,0.85); padding: 8px 16px calc(8px + var(--safe-bottom)); display: flex; align-items: center; gap: 12px; z-index: 10; transition: opacity 0.3s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .reader-footer.fs-hidden { opacity: 0; pointer-events: none; }
@@ -370,6 +370,24 @@ body {
 .detail-action .da-icon { font-size: 20px; width: 28px; text-align: center; }
 .detail-action.danger { color: var(--danger); }
 
+/* Refresh 3D button */
+.refresh-3d {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px 5px 8px;
+  border-radius: 20px; border: none; cursor: pointer;
+  background: linear-gradient(180deg, #5ba8ff 0%, #2a7de1 40%, #1a5fb8 100%);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.35), inset 0 -1px 2px rgba(0,0,0,0.2);
+  color: #fff; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; font-family: inherit;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  transition: transform 0.1s;
+}
+.refresh-3d:active {
+  transform: scale(0.95);
+  background: linear-gradient(180deg, #2a7de1 0%, #1a5fb8 40%, #15509a 100%);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 3px rgba(0,0,0,0.2);
+}
+.refresh-3d svg { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3)); flex-shrink: 0; }
+
 /* Search overlay */
 .search-overlay { position: absolute; top: 0; left: 0; right: 0; background: var(--bg); padding: 12px 16px; z-index: 10; display: none; }
 .search-overlay.active { display: block; }
@@ -390,11 +408,13 @@ body {
 .fab-search:active { transform: scale(0.9); }
 /* Zoom reset */
 .zoom-reset {
-  position: absolute; top: 60px; right: 12px;
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(0,0,0,0.6); color: #fff;
-  border: none; font-size: 18px; cursor: pointer;
-  z-index: 15; backdrop-filter: blur(4px);
+  position: fixed; top: calc(var(--header-h) + var(--safe-top) + 16px); right: 16px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,0.95); color: #333;
+  border: none; font-size: 22px; cursor: pointer;
+  z-index: 160; box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  display: none; align-items: center; justify-content: center;
+  touch-action: manipulation;
 }
 /* Settings button */
 .setting-btn {
@@ -419,12 +439,10 @@ body {
 <!-- HEADER -->
 <header id="appHeader">
   <div class="header-logo">HOME <span>READER</span></div>
-  <div class="header-right">
-    <span id="headerTime">--:--</span>
-    <span id="headerDate">--/--</span>
-    <span class="battery-shell"><span class="battery-fill" id="batteryFill" style="width:100%"></span></span>
-    <span id="batteryPct">--%</span>
-  </div>
+  <button class="refresh-3d" id="headerRefresh">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    ACTUALISER
+  </button>
 </header>
 
 <!-- UPDATE BANNER -->
@@ -544,8 +562,8 @@ body {
       <img id="readerImg1"><img id="readerImg2">
       <canvas id="readerCanvas1"></canvas><canvas id="readerCanvas2"></canvas>
     </div>
-    <button class="zoom-reset" id="zoomReset" style="display:none">&#x2715;</button>
   </div>
+  <button class="zoom-reset" id="zoomReset">&#x2715;</button>
   <div class="reader-footer" id="readerFooter">
     <input type="range" class="reader-slider" id="readerSlider" min="1" max="1" value="1">
     <span class="reader-page-num" id="readerPageNum">1/1</span>
@@ -575,8 +593,8 @@ function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onl
 function pad(v){return v<10?'0'+v:''+v}
 
 /* CLOCK + BATTERY */
-function uClock(){var n=new Date();$('headerTime').textContent=pad(n.getHours())+':'+pad(n.getMinutes());$('headerDate').textContent=pad(n.getDate())+'/'+pad(n.getMonth()+1)}
-function uBat(){if(!('getBattery' in navigator))return;navigator.getBattery().then(function(b){var up=function(){var p=Math.round(b.level*100);$('batteryPct').textContent=p+'%';var f=$('batteryFill');f.style.width=p+'%';f.className='battery-fill'+(p<=20?' low':p<=50?' mid':'')};up();b.addEventListener('levelchange',up)}).catch(function(){})}
+function uClock(){}
+function uBat(){}
 
 /* LIBARCHIVE */
 function initArch(){
@@ -755,12 +773,48 @@ function renderPDF(canvas,pg,mw,mh,dpr){return pg.pdfDoc.getPage(pg.pageNum).the
 /* READER TOUCH */
 function initRTouch(){var area=$('readerContentArea');if(S.rAC)S.rAC.abort();S.rAC=new AbortController();var opt={passive:false,signal:S.rAC.signal};area.addEventListener('touchstart',tStart,opt);area.addEventListener('touchmove',tMove,opt);area.addEventListener('touchend',tEnd,opt)}
 function dst(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
-function tStart(e){if(e.touches.length===2){e.preventDefault();S.pinching=true;S.pinchD=dst(e.touches[0],e.touches[1]);S.pinchS=S.rScale;var cont=$('readerContent');var rect=cont.getBoundingClientRect();var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;var my=(e.touches[0].clientY+e.touches[1].clientY)/2;cont.style.transformOrigin=(mx-rect.left)+'px '+(my-rect.top)+'px'}else if(e.touches.length===1){S.tSX=e.touches[0].clientX;S.tSY=e.touches[0].clientY;S.tST=Date.now();if(S.rScale>1.05){S.panning=true;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;e.preventDefault()}}}
-function tMove(e){if(S.pinching&&e.touches.length===2){e.preventDefault();var d=dst(e.touches[0],e.touches[1]);S.rScale=Math.max(1,Math.min(5,S.pinchS*(d/S.pinchD)));if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0}applyTr();$('zoomReset').style.display=S.rScale>1.05?'block':'none'}else if(S.panning&&e.touches.length===1&&S.rScale>1.05){e.preventDefault();S.rTx+=e.touches[0].clientX-S.panX;S.rTy+=e.touches[0].clientY-S.panY;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;applyTr()}}
-function tEnd(e){if(S.pinching){S.pinching=false;if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0;applyTr();$('zoomReset').style.display='none'}return}S.panning=false;if(e.touches.length>0)return;var dt=Date.now()-S.tST;var dx=e.changedTouches[0].clientX-S.tSX;var dy=e.changedTouches[0].clientY-S.tSY;var adx=Math.abs(dx),ady=Math.abs(dy);if(dt<250&&adx<15&&ady<15){var now=Date.now();if(now-S.lastTap<300){S.lastTap=0;toggleFS();return}S.lastTap=now}if(S.rScale<=1.05&&dt<400&&adx>50&&adx>ady*1.5){if(S.rDir==='rtl'){dx>0?goNext():goPrev()}else{dx<0?goNext():goPrev()}}}
-function applyTr(){var t='scale('+S.rScale+')';if(S.rTx||S.rTy)t+=' translate('+(S.rTx/S.rScale)+'px,'+(S.rTy/S.rScale)+'px)';$('readerContent').style.transform=t}
-function resetZoom(){S.rScale=1;S.rTx=0;S.rTy=0;$('readerContent').style.transform='';$('readerContent').style.transformOrigin='center center';$('zoomReset').style.display='none'}
-$('zoomReset').addEventListener('click',resetZoom);
+function tStart(e){
+  if(e.touches.length===2){
+    e.preventDefault();S.pinching=true;
+    S.pinchD=dst(e.touches[0],e.touches[1]);
+    S.pinchStartScale=S.rScale;S.pinchStartTx=S.rTx;S.pinchStartTy=S.rTy;
+    var area=$('readerContentArea');var rect=area.getBoundingClientRect();
+    S.pinchCX=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;
+    S.pinchCY=(e.touches[0].clientY+e.touches[1].clientY)/2-rect.top;
+  }else if(e.touches.length===1){
+    S.tSX=e.touches[0].clientX;S.tSY=e.touches[0].clientY;S.tST=Date.now();
+    if(S.rScale>1.05){S.panning=true;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;e.preventDefault()}
+  }
+}
+function tMove(e){
+  if(S.pinching&&e.touches.length===2){
+    e.preventDefault();
+    var d=dst(e.touches[0],e.touches[1]);
+    var newScale=Math.max(1,Math.min(5,S.pinchStartScale*(d/S.pinchD)));
+    if(newScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0}else{
+      S.rTx=S.pinchCX-(S.pinchCX-S.pinchStartTx)/S.pinchStartScale*newScale;
+      S.rTy=S.pinchCY-(S.pinchCY-S.pinchStartTy)/S.pinchStartScale*newScale;
+      S.rScale=newScale;
+    }
+    applyTr();$('zoomReset').style.display=S.rScale>1.05?'flex':'none';
+  }else if(S.panning&&e.touches.length===1&&S.rScale>1.05){
+    e.preventDefault();
+    S.rTx+=e.touches[0].clientX-S.panX;S.rTy+=e.touches[0].clientY-S.panY;
+    S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;
+    applyTr();
+  }
+}
+function tEnd(e){
+  if(S.pinching){S.pinching=false;if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0;applyTr();$('zoomReset').style.display='none'}return}
+  S.panning=false;if(e.touches.length>0)return;
+  var dt=Date.now()-S.tST;var dx=e.changedTouches[0].clientX-S.tSX;var dy=e.changedTouches[0].clientY-S.tSY;
+  var adx=Math.abs(dx),ady=Math.abs(dy);
+  if(dt<250&&adx<15&&ady<15){var now=Date.now();if(now-S.lastTap<300){S.lastTap=0;toggleFS();return}S.lastTap=now}
+  if(S.rScale<=1.05&&dt<400&&adx>50&&adx>ady*1.5){if(S.rDir==='rtl'){dx>0?goNext():goPrev()}else{dx<0?goNext():goPrev()}}
+}
+function applyTr(){$('readerContent').style.transform='translate('+S.rTx+'px,'+S.rTy+'px) scale('+S.rScale+')'}
+function resetZoom(){S.rScale=1;S.rTx=0;S.rTy=0;$('readerContent').style.transform='';$('zoomReset').style.display='none'}
+$('zoomReset').addEventListener('click',function(e){e.stopPropagation();e.preventDefault();resetZoom()});
 function toggleFS(){S.rFS=!S.rFS;$('readerHeader').classList.toggle('fs-hidden',S.rFS);$('readerFooter').classList.toggle('fs-hidden',S.rFS);$('readerSettingsPanel').classList.remove('active')}
 function goNext(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage+step<S.rPages.length){S.rPage+=step;renderPage()}else if(S.rPage<S.rPages.length-1){S.rPage=S.rPages.length-1;renderPage()}}
 function goPrev(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage-step>=0){S.rPage-=step;renderPage()}else if(S.rPage>0){S.rPage=0;renderPage()}}
@@ -785,6 +839,7 @@ function loadSet(){S.theme=localStorage.getItem('hr_theme')||'light';document.bo
 /* SW + AUTO UPDATE */
 function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(function(reg){S.swReg=reg;setInterval(function(){reg.update()},60000)}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
 $('updateBtn').addEventListener('click',function(){window.location.reload()});
+$('headerRefresh').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Actualis\u00e9 !')})});
 $('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.update().then(function(){toast('V\u00e9rification termin\u00e9e')}).catch(function(){toast('Erreur de v\u00e9rification')})}else{toast('Service Worker non disponible')}});
 $('refreshBtn').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Biblioth\u00e8que actualis\u00e9e !')})});
 
