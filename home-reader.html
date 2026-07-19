@@ -370,6 +370,41 @@ body {
 .detail-action .da-icon { font-size: 20px; width: 28px; text-align: center; }
 .detail-action.danger { color: var(--danger); }
 
+/* Search overlay */
+.search-overlay { position: absolute; top: 0; left: 0; right: 0; background: var(--bg); padding: 12px 16px; z-index: 10; display: none; }
+.search-overlay.active { display: block; }
+.search-bar-inner { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 12px; background: var(--bg-card); border: 1.5px solid var(--accent); box-shadow: var(--shadow); }
+.search-input-full { flex: 1; border: none; background: none; font-size: 14px; color: var(--text); outline: none; font-family: inherit; }
+.search-close { background: none; border: none; font-size: 18px; color: var(--text-sec); cursor: pointer; padding: 4px; }
+.fab-search {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  left: 16px;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  border: none; box-shadow: 0 4px 16px rgba(74,158,255,0.4);
+  cursor: pointer; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s;
+}
+.fab-search:active { transform: scale(0.9); }
+/* Zoom reset */
+.zoom-reset {
+  position: absolute; top: 60px; right: 12px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); color: #fff;
+  border: none; font-size: 18px; cursor: pointer;
+  z-index: 15; backdrop-filter: blur(4px);
+}
+/* Settings button */
+.setting-btn {
+  width: 100%; background: none; border: none; color: var(--accent);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; text-align: left; padding: 0;
+}
+/* Sort in filter bar */
+.sort-select { flex-shrink: 0; }
+
 /* Toast */
 .toast { position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg-header); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: all 0.3s; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 90%; text-align: center; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -412,14 +447,19 @@ body {
         <button class="filter-btn" data-filter="favorites">&#x2B50; Favoris</button>
         <button class="filter-btn" data-filter="reading">&#x1F4D6; En cours</button>
         <button class="filter-btn" data-filter="finished">&#x2705; Termin&#233;s</button>
-      </div>
-      <div class="lib-search">
-        <input class="search-input" id="searchInput" type="text" placeholder="Rechercher un titre...">
-        <select class="sort-select" id="sortSelect">
+        <select class="sort-select" id="sortSelect" style="margin-left:auto">
           <option value="recent">R&#233;cents</option>
           <option value="name">Nom A-Z</option>
           <option value="lastread">Derni&#232;re lecture</option>
         </select>
+      </div>
+    </div>
+    <!-- Search overlay -->
+    <div class="search-overlay" id="searchOverlay">
+      <div class="search-bar-inner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-sec)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input-full" id="searchInput" type="text" placeholder="Rechercher un titre..." autofocus>
+        <button class="search-close" id="searchClose">&#x2715;</button>
       </div>
     </div>
     <div class="lib-grid" id="bookGrid"></div>
@@ -452,8 +492,10 @@ body {
       <div class="settings-section">Stockage</div>
       <div class="setting-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="setting-label">&#x1F4BE; Espace utilis&#233;</span><span class="setting-value" id="storageInfo">Calcul...</span></div><div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div></div>
       <div class="settings-section">&#192; propos</div>
-      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.3.0</span></div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.4.0</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
+      <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
+      <div class="setting-row"><button class="setting-btn" id="refreshBtn">&#x1F503; Actualiser la biblioth&#232;que</button></div>
     </div>
   </div>
 </main>
@@ -466,6 +508,7 @@ body {
 </nav>
 
 <button class="fab" id="fabAdd">+</button>
+<button class="fab-search" id="fabSearch"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
 <div class="multi-actions" id="multiActions"><span id="multiCount">0 s&#233;lectionn&#233;(s)</span><div style="display:flex;gap:8px"><button class="multi-btn cancel" id="multiCancel">Annuler</button><button class="multi-btn del" id="multiDelete">Supprimer</button></div></div>
 
 <!-- Import modal -->
@@ -501,6 +544,7 @@ body {
       <img id="readerImg1"><img id="readerImg2">
       <canvas id="readerCanvas1"></canvas><canvas id="readerCanvas2"></canvas>
     </div>
+    <button class="zoom-reset" id="zoomReset" style="display:none">&#x2715;</button>
   </div>
   <div class="reader-footer" id="readerFooter">
     <input type="range" class="reader-slider" id="readerSlider" min="1" max="1" value="1">
@@ -513,7 +557,7 @@ body {
 
 <script>
 /* HOME READER v1.3.0 */
-var VER='1.3.0';
+var VER='1.4.0';
 if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 var S={db:null,books:[],colls:[],filter:'all',sort:'recent',search:'',selMode:false,selIds:new Set(),pFiles:null,pCat:null,
@@ -554,7 +598,7 @@ function dPut(s,d){return new Promise(function(r,j){var tx=S.db.transaction(s,'r
 function dDel(s,id){return new Promise(function(r,j){var q=dTx(s,'readwrite').delete(id);q.onsuccess=function(){r()};q.onerror=function(){j(q.error)}})}
 
 /* NAV */
-function goPage(id){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});$(id).classList.add('active');document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.page===id)});$('fabAdd').style.display=id==='pageLibrary'?'flex':'none'}
+function goPage(id){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});$(id).classList.add('active');document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.page===id)});$('fabAdd').style.display=id==='pageLibrary'?'flex':'none';$('fabSearch').style.display=id==='pageLibrary'?'flex':'none'}
 document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('click',function(){goPage(b.dataset.page)})});
 
 /* PARSERS */
@@ -631,10 +675,11 @@ $('multiCancel').addEventListener('click',function(){S.selMode=false;S.selIds.cl
 $('multiDelete').addEventListener('click',function(){confirm2('Supprimer','Supprimer '+S.selIds.size+' livre(s) ?',function(){var ids=Array.from(S.selIds),chain=Promise.resolve();ids.forEach(function(id){chain=chain.then(function(){return dDel('books',id).then(function(){return dDel('bookFiles',id)})})});chain.then(function(){S.selMode=false;S.selIds.clear();uMulti();return loadBooks()}).then(function(){toast('Supprim\u00e9 !')})})});
 
 /* DETAIL */
-function showDetail(id){var bk=S.books.find(function(b){return b.id===id});if(!bk)return;var pct=bk.totalPages?Math.round((bk.currentPage/bk.totalPages)*100):0;var d=$('bookDetail');d.innerHTML='<div class="book-detail-header"><img class="book-detail-cover" src="'+(bk.cover||'')+'" alt=""><div class="book-detail-info"><div class="book-detail-title">'+bk.title+'</div><div class="book-detail-meta">'+bk.category+' \u00B7 '+bk.totalPages+' pages \u00B7 '+bk.fileType.toUpperCase()+'</div><div class="book-detail-progress">'+(bk.status==='reading'?'Page '+(bk.currentPage+1)+'/'+bk.totalPages+' ('+pct+'%)':bk.status==='finished'?'Termin\u00e9 \u2713':'Non lu')+'</div></div></div><div class="book-detail-actions"><button class="detail-action" data-a="read"><span class="da-icon">'+(bk.status==='reading'?'\u25B6\uFE0F':'\uD83D\uDCD6')+'</span>'+(bk.status==='reading'?'Reprendre':'Commencer')+'</button><button class="detail-action" data-a="fav"><span class="da-icon">'+(bk.favorite?'\u2B50':'\u2606')+'</span>'+(bk.favorite?'Retirer des favoris':'Ajouter aux favoris')+'</button><button class="detail-action" data-a="coll"><span class="da-icon">\uD83D\uDCC1</span>'+(bk.collectionId?'Changer de collection':'Ajouter \u00e0 une collection')+'</button><button class="detail-action" data-a="rst"><span class="da-icon">\uD83D\uDD04</span>Recommencer</button><button class="detail-action danger" data-a="del"><span class="da-icon">\uD83D\uDDD1\uFE0F</span>Supprimer</button></div>';
+function showDetail(id){var bk=S.books.find(function(b){return b.id===id});if(!bk)return;var pct=bk.totalPages?Math.round((bk.currentPage/bk.totalPages)*100):0;var d=$('bookDetail');d.innerHTML='<div class="book-detail-header"><img class="book-detail-cover" src="'+(bk.cover||'')+'" alt=""><div class="book-detail-info"><div class="book-detail-title">'+bk.title+'</div><div class="book-detail-meta">'+bk.category+' \u00B7 '+bk.totalPages+' pages \u00B7 '+bk.fileType.toUpperCase()+'</div><div class="book-detail-progress">'+(bk.status==='reading'?'Page '+(bk.currentPage+1)+'/'+bk.totalPages+' ('+pct+'%)':bk.status==='finished'?'Termin\u00e9 \u2713':'Non lu')+'</div></div></div><div class="book-detail-actions"><button class="detail-action" data-a="read"><span class="da-icon">'+(bk.status==='reading'?'\u25B6\uFE0F':'\uD83D\uDCD6')+'</span>'+(bk.status==='reading'?'Reprendre':'Commencer')+'</button><button class="detail-action" data-a="fav"><span class="da-icon">'+(bk.favorite?'\u2B50':'\u2606')+'</span>'+(bk.favorite?'Retirer des favoris':'Ajouter aux favoris')+'</button><button class="detail-action" data-a="rename"><span class="da-icon">\u270F\uFE0F</span>Renommer</button><button class="detail-action" data-a="coll"><span class="da-icon">\uD83D\uDCC1</span>'+(bk.collectionId?'Changer de collection':'Ajouter \u00e0 une collection')+'</button><button class="detail-action" data-a="rst"><span class="da-icon">\uD83D\uDD04</span>Recommencer</button><button class="detail-action danger" data-a="del"><span class="da-icon">\uD83D\uDDD1\uFE0F</span>Supprimer</button></div>';
   d.querySelector('[data-a="read"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');openReader(id)});
   d.querySelector('[data-a="fav"]').addEventListener('click',function(){bk.favorite=!bk.favorite;dPut('books',bk).then(function(){$('bookDetailOverlay').classList.remove('active');loadBooks();toast(bk.favorite?'Ajout\u00e9 !':'Retir\u00e9')})});
   d.querySelector('[data-a="coll"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');showAssign(id)});
+  d.querySelector('[data-a="rename"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');var newName=prompt('Nouveau nom :',bk.title);if(newName&&newName.trim()){bk.title=newName.trim();dPut('books',bk).then(function(){loadBooks();toast('Renomm\u00e9 !')})}});
   d.querySelector('[data-a="rst"]').addEventListener('click',function(){bk.currentPage=0;bk.status='unread';bk.lastRead=null;dPut('books',bk).then(function(){$('bookDetailOverlay').classList.remove('active');loadBooks();toast('R\u00e9initialis\u00e9')})});
   d.querySelector('[data-a="del"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');confirm2('Supprimer','Supprimer ce livre ?',function(){dDel('books',id).then(function(){return dDel('bookFiles',id)}).then(function(){loadBooks();toast('Supprim\u00e9 !')})})});
   $('bookDetailOverlay').classList.add('active')
@@ -649,10 +694,13 @@ $('confirmOverlay').addEventListener('click',function(e){if(e.target===e.current
 function showAssign(bookId){dAll('collections').then(function(colls){var bk=S.books.find(function(b){return b.id===bookId});var sel=bk.collectionId||0;var b=$('assignBox');b.innerHTML='<h3>Collection</h3><div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:16px"><button class="cat-option'+((!bk.collectionId)?' selected':'')+'" data-ci="0" style="font-style:italic;color:var(--text-sec)">Aucune</button>'+colls.map(function(c){return'<button class="cat-option'+(bk.collectionId===c.id?' selected':'')+'" data-ci="'+c.id+'">'+c.name+'</button>'}).join('')+'</div><div class="modal-btns"><button class="modal-btn secondary" id="_asN">Annuler</button><button class="modal-btn primary" id="_asY">Valider</button></div>';$('assignOverlay').classList.add('active');b.querySelectorAll('[data-ci]').forEach(function(i){i.addEventListener('click',function(){b.querySelectorAll('[data-ci]').forEach(function(x){x.classList.remove('selected')});i.classList.add('selected');sel=parseInt(i.dataset.ci)})});$('_asN').addEventListener('click',function(){$('assignOverlay').classList.remove('active')},{once:true});$('_asY').addEventListener('click',function(){bk.collectionId=sel||null;dPut('books',bk).then(function(){$('assignOverlay').classList.remove('active');loadBooks();toast('Collection mise \u00e0 jour')})},{once:true})})}
 $('assignOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)e.currentTarget.classList.remove('active')});
 
-/* FILTERS */
+/* FILTERS + SEARCH */
 $('filterBar').addEventListener('click',function(e){var b=e.target.closest('.filter-btn');if(!b)return;document.querySelectorAll('.filter-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.filter=b.dataset.filter;renderLib()});
-$('searchInput').addEventListener('input',function(e){S.search=e.target.value;renderLib()});
 $('sortSelect').addEventListener('change',function(e){S.sort=e.target.value;renderLib()});
+/* Search FAB */
+$('fabSearch').addEventListener('click',function(){$('searchOverlay').classList.add('active');$('searchInput').focus()});
+$('searchClose').addEventListener('click',function(){$('searchInput').value='';S.search='';renderLib();$('searchOverlay').classList.remove('active')});
+$('searchInput').addEventListener('input',function(e){S.search=e.target.value;renderLib()});
 
 /* COLLECTIONS */
 function loadColls(){return dAll('collections').then(function(c){S.colls=c;renderColls()})}
@@ -707,10 +755,12 @@ function renderPDF(canvas,pg,mw,mh,dpr){return pg.pdfDoc.getPage(pg.pageNum).the
 /* READER TOUCH */
 function initRTouch(){var area=$('readerContentArea');if(S.rAC)S.rAC.abort();S.rAC=new AbortController();var opt={passive:false,signal:S.rAC.signal};area.addEventListener('touchstart',tStart,opt);area.addEventListener('touchmove',tMove,opt);area.addEventListener('touchend',tEnd,opt)}
 function dst(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
-function tStart(e){if(e.touches.length===2){e.preventDefault();S.pinching=true;S.pinchD=dst(e.touches[0],e.touches[1]);S.pinchS=S.rScale}else if(e.touches.length===1){S.tSX=e.touches[0].clientX;S.tSY=e.touches[0].clientY;S.tST=Date.now();if(S.rScale>1.05){S.panning=true;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;e.preventDefault()}}}
-function tMove(e){if(S.pinching&&e.touches.length===2){e.preventDefault();var d=dst(e.touches[0],e.touches[1]);S.rScale=Math.max(1,Math.min(5,S.pinchS*(d/S.pinchD)));if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0}applyTr()}else if(S.panning&&e.touches.length===1&&S.rScale>1.05){e.preventDefault();S.rTx+=e.touches[0].clientX-S.panX;S.rTy+=e.touches[0].clientY-S.panY;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;applyTr()}}
-function tEnd(e){if(S.pinching){S.pinching=false;if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0;applyTr()}return}S.panning=false;if(e.touches.length>0)return;var dt=Date.now()-S.tST;var dx=e.changedTouches[0].clientX-S.tSX;var dy=e.changedTouches[0].clientY-S.tSY;var adx=Math.abs(dx),ady=Math.abs(dy);if(dt<250&&adx<15&&ady<15){var now=Date.now();if(now-S.lastTap<300){S.lastTap=0;toggleFS();return}S.lastTap=now}if(S.rScale<=1.05&&dt<400&&adx>50&&adx>ady*1.5){if(S.rDir==='rtl'){dx>0?goNext():goPrev()}else{dx<0?goNext():goPrev()}}}
-function applyTr(){$('readerContent').style.transform='scale('+S.rScale+') translate('+(S.rTx/S.rScale)+'px,'+(S.rTy/S.rScale)+'px)'}
+function tStart(e){if(e.touches.length===2){e.preventDefault();S.pinching=true;S.pinchD=dst(e.touches[0],e.touches[1]);S.pinchS=S.rScale;var cont=$('readerContent');var rect=cont.getBoundingClientRect();var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;var my=(e.touches[0].clientY+e.touches[1].clientY)/2;cont.style.transformOrigin=(mx-rect.left)+'px '+(my-rect.top)+'px'}else if(e.touches.length===1){S.tSX=e.touches[0].clientX;S.tSY=e.touches[0].clientY;S.tST=Date.now();if(S.rScale>1.05){S.panning=true;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;e.preventDefault()}}}
+function tMove(e){if(S.pinching&&e.touches.length===2){e.preventDefault();var d=dst(e.touches[0],e.touches[1]);S.rScale=Math.max(1,Math.min(5,S.pinchS*(d/S.pinchD)));if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0}applyTr();$('zoomReset').style.display=S.rScale>1.05?'block':'none'}else if(S.panning&&e.touches.length===1&&S.rScale>1.05){e.preventDefault();S.rTx+=e.touches[0].clientX-S.panX;S.rTy+=e.touches[0].clientY-S.panY;S.panX=e.touches[0].clientX;S.panY=e.touches[0].clientY;applyTr()}}
+function tEnd(e){if(S.pinching){S.pinching=false;if(S.rScale<=1.05){S.rScale=1;S.rTx=0;S.rTy=0;applyTr();$('zoomReset').style.display='none'}return}S.panning=false;if(e.touches.length>0)return;var dt=Date.now()-S.tST;var dx=e.changedTouches[0].clientX-S.tSX;var dy=e.changedTouches[0].clientY-S.tSY;var adx=Math.abs(dx),ady=Math.abs(dy);if(dt<250&&adx<15&&ady<15){var now=Date.now();if(now-S.lastTap<300){S.lastTap=0;toggleFS();return}S.lastTap=now}if(S.rScale<=1.05&&dt<400&&adx>50&&adx>ady*1.5){if(S.rDir==='rtl'){dx>0?goNext():goPrev()}else{dx<0?goNext():goPrev()}}}
+function applyTr(){var t='scale('+S.rScale+')';if(S.rTx||S.rTy)t+=' translate('+(S.rTx/S.rScale)+'px,'+(S.rTy/S.rScale)+'px)';$('readerContent').style.transform=t}
+function resetZoom(){S.rScale=1;S.rTx=0;S.rTy=0;$('readerContent').style.transform='';$('readerContent').style.transformOrigin='center center';$('zoomReset').style.display='none'}
+$('zoomReset').addEventListener('click',resetZoom);
 function toggleFS(){S.rFS=!S.rFS;$('readerHeader').classList.toggle('fs-hidden',S.rFS);$('readerFooter').classList.toggle('fs-hidden',S.rFS);$('readerSettingsPanel').classList.remove('active')}
 function goNext(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage+step<S.rPages.length){S.rPage+=step;renderPage()}else if(S.rPage<S.rPages.length-1){S.rPage=S.rPages.length-1;renderPage()}}
 function goPrev(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage-step>=0){S.rPage-=step;renderPage()}else if(S.rPage>0){S.rPage=0;renderPage()}}
@@ -733,8 +783,10 @@ function uStorage(){try{if('estimate' in navigator.storage)navigator.storage.est
 function loadSet(){S.theme=localStorage.getItem('hr_theme')||'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');S.gs=localStorage.getItem('hr_gs')||'110';document.documentElement.style.setProperty('--grid-size',S.gs+'px');$('gridSizeSelect').value=S.gs;S.dDir=localStorage.getItem('hr_dDir')||'ltr';$('defaultDirection').value=S.dDir;S.dMode=localStorage.getItem('hr_dMode')||'single';$('defaultMode').value=S.dMode}
 
 /* SW + AUTO UPDATE */
-function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(function(reg){setInterval(function(){reg.update()},60000)}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
+function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(function(reg){S.swReg=reg;setInterval(function(){reg.update()},60000)}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
 $('updateBtn').addEventListener('click',function(){window.location.reload()});
+$('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.update().then(function(){toast('V\u00e9rification termin\u00e9e')}).catch(function(){toast('Erreur de v\u00e9rification')})}else{toast('Service Worker non disponible')}});
+$('refreshBtn').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Biblioth\u00e8que actualis\u00e9e !')})});
 
 /* INIT */
 uClock();setInterval(uClock,30000);uBat();loadSet();
