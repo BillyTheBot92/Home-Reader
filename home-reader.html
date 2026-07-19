@@ -515,7 +515,7 @@ body {
       <div class="settings-section">Stockage</div>
       <div class="setting-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="setting-label">&#x1F4BE; Espace utilis&#233;</span><span class="setting-value" id="storageInfo">Calcul...</span></div><div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div></div>
       <div class="settings-section">&#192; propos</div>
-      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.4.0</span></div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.5.0</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
@@ -589,7 +589,7 @@ body {
 
 <script src="libarchive.js"></script>
 <script>
-/* HOME READER v1.3.0 */
+/* HOME READER v1.5.0 */
 var VER='1.5.0';
 if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -800,7 +800,7 @@ function openReader(bookId){
   dGet('bookFiles',bookId).then(function(fr){
     if(!fr){hideLd();toast('Fichier introuvable');return}
     var pagesP;
-    if(bk.fileType==='cbz')pagesP=parseCBZPages(fr.data);
+    if(bk.fileType==='cbz'||bk.fileType==='cbr'||bk.fileType==='cb7')pagesP=parseCBZPages(fr.data);
     else if(bk.fileType==='pdf')pagesP=parsePDFPages(fr.data);
     else if(bk.fileType==='epub')pagesP=parseEPUBPages(fr.data);
     else{hideLd();toast('Format non support\u00e9');return}
