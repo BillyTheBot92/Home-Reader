@@ -800,16 +800,24 @@ function openReader(bookId){
   dGet('bookFiles',bookId).then(function(fr){
     if(!fr){hideLd();toast('Fichier introuvable');return}
     var pagesP;
-    if(bk.fileType==='cbz'||bk.fileType==='cbr'||bk.fileType==='cb7'){
-      // Try ZIP first, fallback to libarchive for raw RAR/7z data
-      pagesP=parseCBZPages(fr.data).catch(function(){
-        if(!S.archReady)throw new Error('CBR non disponible');
+    if(bk.fileType==='pdf'){
+      pagesP=parsePDFPages(fr.data);
+    }else if(bk.fileType==='epub'){
+      pagesP=parseEPUBPages(fr.data);
+    }else{
+      // Try ZIP first (CBZ, converted CBR), fallback to libarchive for raw RAR/7z
+      pagesP=parseCBZPages(fr.data).catch(function(zipErr){
+        console.log('[HR] ZIP failed:',zipErr.message,', trying libarchive...');
+        if(!S.archReady||!S.Arch){
+          return Promise.reject(new Error('Extraction impossible: module CBR non charg\u00e9'));
+        }
         showLd('Extraction en cours...');
-        var file=new File([fr.data],bk.title+'.'+bk.fileType);
+        var file=new File([fr.data],(bk.title||'book')+'.'+(bk.fileType||'cbr'));
         return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
           var images=[];
           function walk(obj,path){Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val instanceof File){if(isImg(name))images.push({path:full,file:val})}else if(val&&typeof val==='object')walk(val,full)})}
           walk(extracted,'');
+          if(!images.length)throw new Error('Aucune image trouv\u00e9e');
           images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
           var pages=[];
           images.forEach(function(img){pages.push({type:'image',url:URL.createObjectURL(img.file)})});
@@ -817,9 +825,6 @@ function openReader(bookId){
         });
       });
     }
-    else if(bk.fileType==='pdf')pagesP=parsePDFPages(fr.data);
-    else if(bk.fileType==='epub')pagesP=parseEPUBPages(fr.data);
-    else{hideLd();toast('Format non support\u00e9');return}
     return pagesP.then(function(pages){S.rPages=pages;S.rBook=bk;S.rPage=bk.currentPage||0;S.rDir=bk.category==='Manga'?'rtl':S.dDir;S.rMode=S.dMode;S.rScale=1;S.rTx=0;S.rTy=0;S.rFS=false;bk.status='reading';bk.lastRead=Date.now();return dPut('books',bk)}).then(function(){
       $('readerTitle').textContent=bk.title;var sl=$('readerSlider');sl.max=S.rPages.length;sl.value=S.rPage+1;sl.style.direction=S.rDir==='rtl'?'rtl':'ltr';
       document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('active',b.dataset.mode===S.rMode)});
