@@ -520,7 +520,7 @@ body {
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
       <div class="setting-row"><button class="setting-btn" id="refreshBtn">&#x1F503; Actualiser la biblioth&#232;que</button></div>
-      <div class="setting-row"><button class="setting-btn" id="debugBtn">&#x1F41B; Voir le journal de debug</button></div>
+      <div class="setting-row"><button class="setting-btn" id="debugBtn">&#x1F4E5; T&#233;l&#233;charger le journal</button></div>
     </div>
   </div>
 </main>
@@ -592,6 +592,31 @@ body {
 <script>
 /* HOME READER v1.5.0 */
 var VER='1.5.0';
+
+/* GLOBAL LOG SYSTEM */
+var LOG=[];
+function log(type,msg){
+  var ts=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  var line='['+ts+'] '+type+': '+msg;
+  LOG.push(line);if(LOG.length>500)LOG.shift();
+  if(type==='ERR')log('ERR','',msg);
+  else if(type==='WARN')log('WARN','',msg);
+  else log('INFO','',msg);
+}
+function downloadLog(){
+  var text='HOME READER v'+VER+' - Log\n';
+  text+='Date: '+new Date().toLocaleString('fr-FR')+'\n';
+  text+='UserAgent: '+navigator.userAgent+'\n';
+  text+='archReady: '+S.archReady+' | archFailed: '+(S.archFailed||false)+'\n';
+  text+='Books: '+S.books.length+'\n';
+  text+='='.repeat(50)+'\n\n';
+  text+=LOG.join('\n');
+  var blob=new Blob([text],{type:'text/plain'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='home-reader-log.txt';
+  a.click();URL.revokeObjectURL(a.href);
+}
 if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 var S={db:null,books:[],colls:[],filter:'all',sort:'recent',search:'',selMode:false,selIds:new Set(),pFiles:null,pCat:null,
@@ -617,9 +642,9 @@ function initArch(){
   try{
     window.LibArchive.init({getWorker:function(){return new Worker('libarchive-worker.js')}});
     S.Arch=window.LibArchive;S.archReady=true;S.archFailed=false;
-    console.log('[HR] libarchive LOCAL ready');updCbrStatus();
+    log('INFO','libarchive LOCAL ready');updCbrStatus();
   }catch(e){
-    S.archFailed=true;console.warn('[HR] libarchive init fail:',e);updCbrStatus();
+    S.archFailed=true;log('WARN','libarchive init fail:',e);updCbrStatus();
   }
 }
 function updCbrStatus(){
@@ -726,7 +751,7 @@ $('importConfirm').addEventListener('click',function(){
           }).catch(function(e){
             $('loadProgress').style.display='none';$('loadCancel').style.display='none';
             toast(e.message==='Annul\u00e9'?'Import annul\u00e9':'Erreur: '+e.message);
-            console.error(e);return null
+            log('ERR',e.message||e);return null
           })
         })
       }else if(ext==='pdf'){coverP=parsePDFCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
@@ -734,10 +759,21 @@ $('importConfirm').addEventListener('click',function(){
       else{toast('Format non reconnu: '+ext);next();return}
       coverP.then(function(res){
         if(!res){next();return}
-        var cvP=res.cover?b64(res.cover):Promise.resolve(null);
-        cvP.then(function(coverB64){return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'}).then(function(bookId){if(res.pages){return dPut('bookFiles',{id:bookId,pages:res.pages})}else{return dPut('bookFiles',{id:bookId,data:res.buf})}})}).then(function(){count++;next()}).catch(function(e){console.error(e);toast('Erreur: '+file.name);next()})
+        var cvP2=res.cover?b64(res.cover):Promise.resolve(null);
+        var savedId;
+        cvP2.then(function(coverB64){
+          return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'})
+        }).then(function(bookId){
+          savedId=bookId;
+          if(res.pages){return dPut('bookFiles',{id:bookId,pages:res.pages})}
+          else{return dPut('bookFiles',{id:bookId,data:res.buf})}
+        }).then(function(){count++;next()}).catch(function(e){
+          log('ERR','Import store error:',e);
+          if(savedId)dDel('books',savedId).catch(function(){});
+          log('ERR','Import: '+(e.message||e));toast('Erreur: '+(e.message||e));next()
+        })
       })
-    }).catch(function(e){console.error(e);toast('Erreur lecture: '+file.name);next()})
+    }).catch(function(e){log('ERR','Read error:',e);log('ERR','Import: '+(e.message||e));toast('Erreur: '+(e.message||e));next()})
   }
   next()
 });
@@ -816,7 +852,7 @@ function openReader(bookId){
     }else{
       // Try ZIP (CBZ), fallback to libarchive
       pagesP=parseCBZPages(fr.data).catch(function(zipErr){
-        console.log('[HR] ZIP failed:',zipErr.message,', trying libarchive...');
+        log('INFO','ZIP failed:',zipErr.message,', trying libarchive...');
         if(!S.archReady||!S.Arch){
           return Promise.reject(new Error('Module CBR non charg\u00e9'));
         }
@@ -848,7 +884,7 @@ function openReader(bookId){
       $('readerView').classList.add('active');$('appHeader').classList.add('hidden');$('bottomNav').classList.add('hidden');$('fabAdd').style.display='none';
       hideLd();renderPage();initRTouch()
     })
-  }).catch(function(err){hideLd();console.error('[HR] Read error:',err);toast('Erreur: '+(err&&err.message?err.message:String(err)))})
+  }).catch(function(err){hideLd();log('ERR','Read error:',err);log('ERR','Lecture: '+(err&&err.message?err.message:String(err)));toast('Erreur: '+(err&&err.message?err.message:String(err)))})
 }
 
 function renderPage(){
@@ -944,11 +980,11 @@ $('updateBtn').addEventListener('click',function(){window.location.reload()});
 $('headerRefresh').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Actualis\u00e9 !')})});
 $('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.update().then(function(){toast('V\u00e9rification termin\u00e9e')}).catch(function(){toast('Erreur de v\u00e9rification')})}else{toast('Service Worker non disponible')}});
 $('refreshBtn').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Biblioth\u00e8que actualis\u00e9e !')})});
-$('debugBtn').addEventListener('click',function(){alert(S.debugLog||'Aucun log. Essayez d\'ouvrir un CBR d\'abord.')});
+$('debugBtn').addEventListener('click',function(){downloadLog();toast('Journal t\u00e9l\u00e9charg\u00e9 !')});
 
 /* INIT */
 uClock();setInterval(uClock,30000);uBat();loadSet();
-openDB().then(function(){return loadBooks()}).then(function(){return loadColls()}).then(function(){initArch();initSW();console.log('[HOME READER] v'+VER+' ready')}).catch(function(err){console.error('[HR] init:',err);toast('Erreur de d\u00e9marrage')});
+openDB().then(function(){return loadBooks()}).then(function(){return loadColls()}).then(function(){initArch();initSW();log('INFO','v'+VER+' ready')}).catch(function(err){log('ERR','init: '+(err.message||err));toast('Erreur de d\u00e9marrage')});
 </script>
 </body>
 </html>
