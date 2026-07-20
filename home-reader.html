@@ -427,6 +427,7 @@ body {
   font-size: 13px; font-weight: 600; cursor: pointer;
   font-family: inherit; text-align: left; padding: 0;
 }
+.setting-btn.danger-text { color: var(--danger); }
 /* Sort in filter bar */
 .sort-select { flex-shrink: 0; }
 
@@ -514,6 +515,8 @@ body {
       <div class="setting-row"><span class="setting-label">&#x1F4C4; Mode par d&#233;faut</span><select class="setting-select" id="defaultMode"><option value="single">Page simple</option><option value="double">Double page</option><option value="vertical">D&#233;filement vertical</option></select></div>
       <div class="settings-section">Stockage</div>
       <div class="setting-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="setting-label">&#x1F4BE; Espace utilis&#233;</span><span class="setting-value" id="storageInfo">Calcul...</span></div><div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div></div>
+      <div class="setting-row" style="gap:10px"><button class="setting-btn" id="clearCacheBtn">&#x1F5D1;&#xFE0F; Effacer le cache</button></div>
+      <div class="setting-row" style="gap:10px"><button class="setting-btn danger-text" id="clearDataBtn">&#x26A0;&#xFE0F; Effacer les donn&#233;es</button></div>
       <div class="settings-section">&#192; propos</div>
       <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.5.0</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
@@ -640,6 +643,7 @@ function isImg(n){return/\.(jpe?g|png|gif|webp|bmp|avif)$/i.test(n)}
 function sortPaths(a){return a.slice().sort(function(x,y){var nx=x.replace(/\D/g,'').padStart(10,'0'),ny=y.replace(/\D/g,'').padStart(10,'0');return nx<ny?-1:nx>ny?1:x.localeCompare(y)})}
 function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onloadend=function(){r(fr.result)};fr.readAsDataURL(blob)})}
 function pad(v){return v<10?'0'+v:''+v}
+function withTimeout(p,ms,msg){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error(msg||'Timeout'))},ms)})])}
 
 /* CLOCK + BATTERY */
 function uClock(){}
@@ -762,7 +766,7 @@ $('importConfirm').addEventListener('click',function(){
             log('ERR',e.message||e);return null
           })
         })
-      }else if(ext==='pdf'){coverP=parsePDFCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
+      }else if(ext==='pdf'){coverP=withTimeout(parsePDFCover(buffer),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
       else if(ext==='epub'){coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})}
       else{toast('Format non reconnu: '+ext);next();return}
       coverP.then(function(res){
@@ -854,7 +858,7 @@ function openReader(bookId){
       });
       pagesP=Promise.resolve(directPages);
     }else if(bk.fileType==='pdf'){
-      pagesP=parsePDFPages(fr.data);
+      pagesP=withTimeout(parsePDFPages(fr.data),30000,'PDF trop volumineux (timeout 30s)');
     }else if(bk.fileType==='epub'){
       pagesP=parseEPUBPages(fr.data);
     }else{
@@ -989,6 +993,8 @@ $('headerRefresh').addEventListener('click',function(){loadBooks().then(function
 $('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.update().then(function(){toast('V\u00e9rification termin\u00e9e')}).catch(function(){toast('Erreur de v\u00e9rification')})}else{toast('Service Worker non disponible')}});
 $('refreshBtn').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Biblioth\u00e8que actualis\u00e9e !')})});
 $('debugBtn').addEventListener('click',function(){downloadLog();toast('Journal t\u00e9l\u00e9charg\u00e9 !')});
+$('clearCacheBtn').addEventListener('click',function(){caches.keys().then(function(names){return Promise.all(names.map(function(n){return caches.delete(n)}))}).then(function(){toast('Cache effac\u00e9 !')}).catch(function(){toast('Erreur lors de la suppression du cache')})});
+$('clearDataBtn').addEventListener('click',function(){confirm2('Effacer les donn\u00e9es','Tous les livres et collections seront supprim\u00e9s. Cette action est irr\u00e9versible.',function(){if(S.db){S.db.close();S.db=null}var r=indexedDB.deleteDatabase('HomeReaderDB');r.onsuccess=function(){S.books=[];S.colls=[];renderLib();renderColls();renderResume();uStorage();toast('Donn\u00e9es effac\u00e9es !');openDB()};r.onerror=function(){toast('Erreur lors de la suppression')}})});
 
 /* INIT */
 uClock();setInterval(uClock,30000);uBat();loadSet();
