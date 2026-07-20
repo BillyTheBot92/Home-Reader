@@ -515,8 +515,8 @@ body {
       <div class="setting-row"><span class="setting-label">&#x1F4C4; Mode par d&#233;faut</span><select class="setting-select" id="defaultMode"><option value="single">Page simple</option><option value="double">Double page</option><option value="vertical">D&#233;filement vertical</option></select></div>
       <div class="settings-section">Stockage</div>
       <div class="setting-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="setting-label">&#x1F4BE; Espace utilis&#233;</span><span class="setting-value" id="storageInfo">Calcul...</span></div><div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div></div>
-      <div class="setting-row" style="gap:10px"><button class="setting-btn" id="clearCacheBtn">&#x1F5D1;&#xFE0F; Effacer le cache</button></div>
-      <div class="setting-row" style="gap:10px"><button class="setting-btn danger-text" id="clearDataBtn">&#x26A0;&#xFE0F; Effacer les donn&#233;es</button></div>
+      <div class="setting-row"><button class="setting-btn" id="clearCacheBtn">&#x1F5D1;&#xFE0F; Effacer le cache</button></div>
+      <div class="setting-row"><button class="setting-btn danger-text" id="clearDataBtn">&#x26A0;&#xFE0F; Effacer les donn&#233;es</button></div>
       <div class="settings-section">&#192; propos</div>
       <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.5.0</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
@@ -766,7 +766,7 @@ $('importConfirm').addEventListener('click',function(){
             log('ERR',e.message||e);return null
           })
         })
-      }else if(ext==='pdf'){coverP=withTimeout(parsePDFCover(buffer),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
+      }else if(ext==='pdf'){coverP=withTimeout(parsePDFCover(buffer.slice(0)),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
       else if(ext==='epub'){coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})}
       else{toast('Format non reconnu: '+ext);next();return}
       coverP.then(function(res){
