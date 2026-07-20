@@ -717,7 +717,7 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
     if(!opfFile)return fallbackEPUBImages(zip);
     var base=opfPath.replace(/[^/]*$/,'');
     return opfFile.async('text').then(function(opfXml){
-      // Parse manifest (handle varied attribute order)
+      // Parse manifest
       var manifest={};
       var mBlock=opfXml.match(/<manifest[^>]*>([\s\S]*?)<\/manifest>/);
       if(mBlock){var itemRe=/<item\s+([^>]*)\/?\s*>/g;var im2;
@@ -731,48 +731,64 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
       var spineIds=[];var spineBlock=opfXml.match(/<spine[^>]*>([\s\S]*?)<\/spine>/);
       if(spineBlock){var sr=/idref="([^"]+)"/g;var si;while((si=sr.exec(spineBlock[1]))!==null)spineIds.push(si[1])}
       if(!spineIds.length)return fallbackEPUBImages(zip);
-      // Check if text-based
       var hasXhtml=spineIds.some(function(id){var it=manifest[id];return it&&(it.type.indexOf('xhtml')>=0||it.type.indexOf('html')>=0)});
       if(!hasXhtml)return fallbackEPUBImages(zip);
-      // Build a map of all images in the zip for resolving
-      var imgMap={};zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgMap[p]=e});
-      // Extract each spine item as a page
-      var chain=Promise.resolve([]);
-      spineIds.forEach(function(id){
-        chain=chain.then(function(pages){
-          var item=manifest[id];if(!item)return pages;
-          var filePath=base+decodeURIComponent(item.href);
-          var f=zip.file(filePath);if(!f)return pages;
-          return f.async('text').then(function(rawHtml){
-            // Strip link/style tags (we use our own CSS)
-            var content=rawHtml.replace(/<link[^>]*>/gi,'').replace(/<style[^>]*>[\s\S]*?<\/style>/gi,'');
-            // Extract body
-            var bodyM=content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-            content=bodyM?bodyM[1]:content;
-            // Neutralize internal links (*.xhtml, *.html) - only replace href value
-            content=content.replace(/href="[^"]*\.x?html[^"]*"/gi,'href="#"');
-            // Find all image srcs to resolve
-            var imgSrcs=[];var imgRe2=/(<img[^>]*src=")([^"]+)("[^>]*>)/gi;var imr;
-            while((imr=imgRe2.exec(content))!==null){
-              if(imr[2].indexOf('blob:')!==0&&imr[2].indexOf('data:')!==0)imgSrcs.push(imr[2])
-            }
-            if(!imgSrcs.length){pages.push({type:'html',content:content});return pages}
-            // Resolve each image to blob URL
-            var resolveChain=Promise.resolve(content);
-            imgSrcs.forEach(function(src){
-              resolveChain=resolveChain.then(function(c){
-                var resolved=resolveEpubPath(filePath,src);
-                var imgFile=zip.file(resolved)||imgMap[resolved];
-                if(!imgFile)return c;
-                if(imgFile.async){return imgFile.async('blob').then(function(bl){return c.split(src).join(URL.createObjectURL(bl))})}
-                return c
-              })
-            });
-            return resolveChain.then(function(resolved){pages.push({type:'html',content:resolved});return pages})
+
+      // STEP 1: Pre-extract ALL images to blob URLs
+      var imgUrlMap={};
+      var imgEntries=[];
+      zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgEntries.push({path:p,entry:e})});
+      var imgChain=Promise.resolve();
+      imgEntries.forEach(function(ie){
+        imgChain=imgChain.then(function(){
+          return ie.entry.async('blob').then(function(bl){
+            imgUrlMap[ie.path]=URL.createObjectURL(bl);
           })
         })
       });
-      return chain
+
+      // STEP 2: Build filename→pageIndex map for sommaire links
+      var fileToPage={};
+      spineIds.forEach(function(id,idx){
+        var it=manifest[id];if(it)fileToPage[it.href]=idx;
+      });
+
+      return imgChain.then(function(){
+        // STEP 3: Extract each spine item as a page
+        var pageChain=Promise.resolve([]);
+        spineIds.forEach(function(id){
+          pageChain=pageChain.then(function(pages){
+            var item=manifest[id];if(!item)return pages;
+            var filePath=base+decodeURIComponent(item.href);
+            var f=zip.file(filePath);if(!f)return pages;
+            return f.async('text').then(function(rawHtml){
+              var content=rawHtml.replace(/<link[^>]*>/gi,'').replace(/<style[^>]*>[\s\S]*?<\/style>/gi,'');
+              var bodyM=content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+              content=bodyM?bodyM[1]:content;
+              // Replace all src="..." with pre-extracted blob URLs
+              content=content.replace(/src="([^"]+)"/gi,function(match,src){
+                if(src.indexOf('blob:')===0||src.indexOf('data:')===0)return match;
+                var resolved=resolveEpubPath(filePath,src);
+                return imgUrlMap[resolved]?'src="'+imgUrlMap[resolved]+'"':match;
+              });
+              // Convert internal links to chapter navigation
+              content=content.replace(/href="([^"]*\.x?html)([^"]*)"/gi,function(match,file,hash){
+                var fname=file.split('/').pop();
+                // Find the file in fileToPage
+                var pageIdx=null;
+                Object.keys(fileToPage).forEach(function(k){
+                  if(k===fname||k===file||decodeURIComponent(k)===fname)pageIdx=fileToPage[k];
+                });
+                if(pageIdx!==null)return'href="#" data-epub-page="'+pageIdx+'"';
+                return'href="#"';
+              });
+              pages.push({type:'html',content:content});
+              return pages
+            })
+          })
+        });
+        return pageChain
+      })
     })
   })
 })}
@@ -1001,6 +1017,14 @@ function renderPage(){
   if(pg.type==='html'){
     hc.innerHTML=pg.content;hw.style.display='block';hw.scrollTop=0;
     cont.classList.remove('double-page');
+    // Enable EPUB chapter navigation links
+    hc.querySelectorAll('[data-epub-page]').forEach(function(link){
+      link.addEventListener('click',function(e){
+        e.preventDefault();
+        var target=parseInt(link.dataset.epubPage);
+        if(!isNaN(target)&&target>=0&&target<S.rPages.length){S.rPage=target;renderPage()}
+      })
+    });
     done=Promise.resolve()
   }else if(pg.type==='image'){
     i1.src=pg.url;i1.style.display='block';i1.style.maxWidth=dbl?'50%':'100%';
