@@ -412,10 +412,12 @@ body {
 .reader-html-content h3 { color: #fff; font-size: 1.1em; margin: 0.8em 0 0.4em; }
 .reader-html-content p { margin: 0.7em 0; text-align: justify; }
 .reader-html-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px auto; display: block; }
-.reader-html-content a { color: var(--accent); pointer-events: none; text-decoration: none; }
+.reader-html-content a { color: var(--accent); text-decoration: none; }
 .reader-html-content blockquote { border-left: 3px solid var(--accent); padding-left: 14px; margin: 1em 0; opacity: 0.85; font-style: italic; }
 .reader-html-content em,.reader-html-content i { font-style: italic; }
 .reader-html-content strong,.reader-html-content b { font-weight: 700; color: #fff; }
+.reader-html-content section { display: block; }
+.reader-html-content div { margin: 4px 0; }
 /* Sort in filter bar */
 .sort-select { flex-shrink: 0; }
 
@@ -747,8 +749,8 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
             // Extract body
             var bodyM=content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
             content=bodyM?bodyM[1]:content;
-            // Neutralize internal links (*.xhtml, *.html)
-            content=content.replace(/(<a\s+[^>]*href=")([^"]*\.x?html[^"]*")/gi,function(m,pre,href){return pre+'#" data-epub-link="true'});
+            // Neutralize internal links (*.xhtml, *.html) - only replace href value
+            content=content.replace(/href="[^"]*\.x?html[^"]*"/gi,'href="#"');
             // Find all image srcs to resolve
             var imgSrcs=[];var imgRe2=/(<img[^>]*src=")([^"]+)("[^>]*>)/gi;var imr;
             while((imr=imgRe2.exec(content))!==null){
