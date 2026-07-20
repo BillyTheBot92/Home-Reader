@@ -405,20 +405,17 @@ body {
   font-family: inherit; text-align: left; padding: 0;
 }
 .setting-btn.danger-text { color: var(--danger); }
-/* EPUB text reader */
-.reader-html-wrap { width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 16px; }
-.reader-html-content { max-width: 720px; margin: 0 auto; color: #e8e8f0; font-size: 16px; line-height: 1.7; word-wrap: break-word; overflow-wrap: break-word; }
-.reader-html-content h1,.reader-html-content h2,.reader-html-content h3 { color: #fff; margin: 1.2em 0 0.5em; line-height: 1.3; }
-.reader-html-content h1 { font-size: 1.6em; }
-.reader-html-content h2 { font-size: 1.3em; }
-.reader-html-content h3 { font-size: 1.1em; }
-.reader-html-content p { margin: 0.6em 0; }
-.reader-html-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; }
-.reader-html-content a { color: var(--accent); }
+.reader-html-wrap { width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 18px; }
+.reader-html-content { max-width: 720px; margin: 0 auto; color: #e8e8f0; font-size: 17px; line-height: 1.75; word-wrap: break-word; overflow-wrap: break-word; }
+.reader-html-content h1 { color: #fff; font-size: 1.5em; margin: 1em 0 0.6em; line-height: 1.3; }
+.reader-html-content h2 { color: #fff; font-size: 1.25em; margin: 1em 0 0.5em; }
+.reader-html-content h3 { color: #fff; font-size: 1.1em; margin: 0.8em 0 0.4em; }
+.reader-html-content p { margin: 0.7em 0; text-align: justify; }
+.reader-html-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px auto; display: block; }
+.reader-html-content a { color: var(--accent); pointer-events: none; text-decoration: none; }
 .reader-html-content blockquote { border-left: 3px solid var(--accent); padding-left: 14px; margin: 1em 0; opacity: 0.85; font-style: italic; }
-.reader-html-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-.reader-html-content td,.reader-html-content th { border: 1px solid rgba(255,255,255,0.15); padding: 6px 10px; text-align: left; }
-.reader-html-content .epub-chapter-sep { border: none; border-top: 1px solid rgba(255,255,255,0.15); margin: 2em 0; }
+.reader-html-content em,.reader-html-content i { font-style: italic; }
+.reader-html-content strong,.reader-html-content b { font-weight: 700; color: #fff; }
 /* Sort in filter bar */
 .sort-select { flex-shrink: 0; }
 
@@ -675,46 +672,40 @@ function parseCBZPages(buf){return JSZip.loadAsync(buf).then(function(zip){var i
 function parsePDFCover(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){return pdf.getPage(1).then(function(page){var dpr=window.devicePixelRatio||1;var vp=page.getViewport({scale:0.5*dpr});var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise.then(function(){return new Promise(function(r){c.toBlob(function(bl){r({cover:bl,total:pdf.numPages})},'image/jpeg',0.8)})})})})}
 function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push({type:'pdf',pdfDoc:pdf,pageNum:i});return pages})}
 function parseEPUBCover(buf){return JSZip.loadAsync(buf).then(function(zip){
-  // Try to find cover via OPF metadata
   var containerFile=zip.file('META-INF/container.xml');
-  var opfPath=null;
-  var findCover=Promise.resolve(null);
-  if(containerFile){
-    findCover=containerFile.async('text').then(function(xml){
-      var m=xml.match(/full-path="([^"]+\.opf)"/);
-      if(m)opfPath=m[1];
-      var opfFile=opfPath?zip.file(opfPath):null;
-      if(!opfFile)return null;
-      return opfFile.async('text').then(function(opfXml){
-        // Find cover meta
-        var cm=opfXml.match(/name="cover"\s+content="([^"]+)"/)||opfXml.match(/content="([^"]+)"\s+name="cover"/);
-        if(!cm)return null;
+  if(!containerFile){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});var cv=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];if(!cv)return{cover:null,total:1};return cv.entry.async('blob').then(function(bl){return{cover:bl,total:Math.max(imgs.length,1)}})}
+  return containerFile.async('text').then(function(xml){
+    var m=xml.match(/full-path="([^"]+\.opf)"/);if(!m)return{cover:null,total:1};
+    var opfPath=m[1];var opfFile=zip.file(opfPath);if(!opfFile)return{cover:null,total:1};
+    var base=opfPath.replace(/[^/]*$/,'');
+    return opfFile.async('text').then(function(opfXml){
+      // Count spine items for totalPages
+      var spineIds=[];var sr=/idref="([^"]+)"/g;var si;
+      var spineBlock=opfXml.match(/<spine[^>]*>([\s\S]*?)<\/spine>/);
+      if(spineBlock){var sr2=/idref="([^"]+)"/g;while((si=sr2.exec(spineBlock[1]))!==null)spineIds.push(si[1])}
+      var total=spineIds.length||1;
+      // Find cover image via OPF meta
+      var cm=opfXml.match(/name="cover"\s+content="([^"]+)"/)||opfXml.match(/content="([^"]+)"\s+name="cover"/);
+      if(cm){
         var coverId=cm[1];
         var im=opfXml.match(new RegExp('id="'+coverId.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'"[^>]*href="([^"]+)"'));
-        if(!im)return null;
-        var base=opfPath?opfPath.replace(/[^/]*$/,''):'';
-        var coverPath=base+im[1];
-        var cf=zip.file(coverPath);
-        if(!cf)return null;
-        return cf.async('blob');
-      })
-    }).catch(function(){return null})
-  }
-  return findCover.then(function(coverBlob){
-    if(coverBlob){
-      // Count pages
-      var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push(p)});
-      return{cover:coverBlob,total:Math.max(imgs.length,1)}
-    }
-    // Fallback: first image with cover in name, or first image
-    var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});
-    var cv=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];
-    if(!cv)return{cover:null,total:1};
-    return cv.entry.async('blob').then(function(bl){return{cover:bl,total:Math.max(imgs.length,1)}})
+        if(im){var cf=zip.file(base+im[1]);if(cf)return cf.async('blob').then(function(bl){return{cover:bl,total:total}})}
+      }
+      // Fallback: find cover in first XHTML or first image
+      var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});
+      var cv2=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];
+      if(!cv2)return{cover:null,total:total};
+      return cv2.entry.async('blob').then(function(bl){return{cover:bl,total:total}})
+    })
   })
 })}
+function resolveEpubPath(from,href){
+  if(href.indexOf('/')===0)return href.substring(1);
+  var parts=from.replace(/[^/]*$/,'').split('/');
+  href.split('/').forEach(function(seg){if(seg==='..')parts.pop();else if(seg!=='.')parts.push(seg)});
+  return parts.filter(function(s){return s}).join('/')
+}
 function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
-  // 1. Find OPF via container.xml
   var containerFile=zip.file('META-INF/container.xml');
   if(!containerFile)return fallbackEPUBImages(zip);
   return containerFile.async('text').then(function(xml){
@@ -724,60 +715,58 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
     if(!opfFile)return fallbackEPUBImages(zip);
     var base=opfPath.replace(/[^/]*$/,'');
     return opfFile.async('text').then(function(opfXml){
-      // 2. Parse manifest
-      var manifest={};var re=/<item\s+[^>]*>/g;var im;
-      while((im=re.exec(opfXml))!==null){
-        var idM=im[0].match(/id="([^"]+)"/);
-        var hrefM=im[0].match(/href="([^"]+)"/);
-        var mtM=im[0].match(/media-type="([^"]+)"/);
-        if(idM&&hrefM)manifest[idM[1]]={href:hrefM[1],type:mtM?mtM[1]:''}
+      // Parse manifest (handle varied attribute order)
+      var manifest={};
+      var mBlock=opfXml.match(/<manifest[^>]*>([\s\S]*?)<\/manifest>/);
+      if(mBlock){var itemRe=/<item\s+([^>]*)\/?\s*>/g;var im2;
+        while((im2=itemRe.exec(mBlock[1]))!==null){
+          var attrs=im2[1];
+          var idM=attrs.match(/id="([^"]+)"/);var hrefM=attrs.match(/href="([^"]+)"/);var mtM=attrs.match(/media-type="([^"]+)"/);
+          if(idM&&hrefM)manifest[idM[1]]={href:hrefM[1],type:mtM?mtM[1]:''}
+        }
       }
-      // 3. Parse spine
-      var spineIds=[];var sr=/<itemref\s+[^>]*idref="([^"]+)"[^>]*>/g;var si;
-      while((si=sr.exec(opfXml))!==null)spineIds.push(si[1]);
+      // Parse spine
+      var spineIds=[];var spineBlock=opfXml.match(/<spine[^>]*>([\s\S]*?)<\/spine>/);
+      if(spineBlock){var sr=/idref="([^"]+)"/g;var si;while((si=sr.exec(spineBlock[1]))!==null)spineIds.push(si[1])}
       if(!spineIds.length)return fallbackEPUBImages(zip);
-      // 4. Check if this is text-based or image-based
+      // Check if text-based
       var hasXhtml=spineIds.some(function(id){var it=manifest[id];return it&&(it.type.indexOf('xhtml')>=0||it.type.indexOf('html')>=0)});
       if(!hasXhtml)return fallbackEPUBImages(zip);
-      // 5. Extract chapters in spine order
+      // Build a map of all images in the zip for resolving
+      var imgMap={};zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgMap[p]=e});
+      // Extract each spine item as a page
       var chain=Promise.resolve([]);
       spineIds.forEach(function(id){
         chain=chain.then(function(pages){
           var item=manifest[id];if(!item)return pages;
           var filePath=base+decodeURIComponent(item.href);
           var f=zip.file(filePath);if(!f)return pages;
-          return f.async('text').then(function(html){
-            // Extract body content and inline images
-            var bodyM=html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-            var content=bodyM?bodyM[1]:html;
-            // Resolve image paths to blob URLs
-            var imgRe=/<img[^>]*src="([^"]+)"[^>]*>/gi;var imgMatch;
-            var imgPaths=[];
-            while((imgMatch=imgRe.exec(content))!==null){
-              var src=imgMatch[1];
-              if(src.indexOf('blob:')!==0&&src.indexOf('data:')!==0)imgPaths.push(src)
+          return f.async('text').then(function(rawHtml){
+            // Strip link/style tags (we use our own CSS)
+            var content=rawHtml.replace(/<link[^>]*>/gi,'').replace(/<style[^>]*>[\s\S]*?<\/style>/gi,'');
+            // Extract body
+            var bodyM=content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            content=bodyM?bodyM[1]:content;
+            // Neutralize internal links (*.xhtml, *.html)
+            content=content.replace(/(<a\s+[^>]*href=")([^"]*\.x?html[^"]*")/gi,function(m,pre,href){return pre+'#" data-epub-link="true'});
+            // Find all image srcs to resolve
+            var imgSrcs=[];var imgRe2=/(<img[^>]*src=")([^"]+)("[^>]*>)/gi;var imr;
+            while((imr=imgRe2.exec(content))!==null){
+              if(imr[2].indexOf('blob:')!==0&&imr[2].indexOf('data:')!==0)imgSrcs.push(imr[2])
             }
-            if(!imgPaths.length){pages.push({type:'html',content:content});return pages}
-            // Resolve images
-            var imgChain=Promise.resolve(content);
-            imgPaths.forEach(function(src){
-              imgChain=imgChain.then(function(c){
-                var imgPath=base+decodeURIComponent(src);
-                // Handle relative paths like ../Images/foo.jpg
-                if(src.indexOf('../')===0){
-                  var parts=(base+src).split('/');var resolved=[];
-                  parts.forEach(function(p){if(p==='..'){resolved.pop()}else if(p!=='.')resolved.push(p)});
-                  imgPath=resolved.join('/')
-                }
-                var imgFile=zip.file(imgPath);
+            if(!imgSrcs.length){pages.push({type:'html',content:content});return pages}
+            // Resolve each image to blob URL
+            var resolveChain=Promise.resolve(content);
+            imgSrcs.forEach(function(src){
+              resolveChain=resolveChain.then(function(c){
+                var resolved=resolveEpubPath(filePath,src);
+                var imgFile=zip.file(resolved)||imgMap[resolved];
                 if(!imgFile)return c;
-                return imgFile.async('blob').then(function(bl){
-                  var url=URL.createObjectURL(bl);
-                  return c.split(src).join(url)
-                })
+                if(imgFile.async){return imgFile.async('blob').then(function(bl){return c.split(src).join(URL.createObjectURL(bl))})}
+                return c
               })
             });
-            return imgChain.then(function(resolved){pages.push({type:'html',content:resolved});return pages})
+            return resolveChain.then(function(resolved){pages.push({type:'html',content:resolved});return pages})
           })
         })
       });
@@ -1008,15 +997,7 @@ function renderPage(){
   cont.classList.toggle('double-page',dbl);
   var pg=S.rPages[p],pg2=(dbl&&p+1<S.rPages.length)?S.rPages[p+1]:null,done;
   if(pg.type==='html'){
-    // EPUB text chapter - show all remaining chapters as scroll
-    var allHtml='';
-    for(var ci=p;ci<S.rPages.length;ci++){
-      if(S.rPages[ci].type==='html'){
-        if(ci>p)allHtml+='<hr class="epub-chapter-sep">';
-        allHtml+=S.rPages[ci].content;
-      }
-    }
-    hc.innerHTML=allHtml;hw.style.display='block';hw.scrollTop=0;
+    hc.innerHTML=pg.content;hw.style.display='block';hw.scrollTop=0;
     cont.classList.remove('double-page');
     done=Promise.resolve()
   }else if(pg.type==='image'){
