@@ -735,7 +735,7 @@ $('importConfirm').addEventListener('click',function(){
       coverP.then(function(res){
         if(!res){next();return}
         var cvP=res.cover?b64(res.cover):Promise.resolve(null);
-        cvP.then(function(coverB64){return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'}).then(function(bookId){return dPut('bookFiles',{id:bookId,data:res.buf})})}).then(function(){count++;next()}).catch(function(e){console.error(e);toast('Erreur: '+file.name);next()})
+        cvP.then(function(coverB64){return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'}).then(function(bookId){if(res.pages){return dPut('bookFiles',{id:bookId,pages:res.pages})}else{return dPut('bookFiles',{id:bookId,data:res.buf})}})}).then(function(){count++;next()}).catch(function(e){console.error(e);toast('Erreur: '+file.name);next()})
       })
     }).catch(function(e){console.error(e);toast('Erreur lecture: '+file.name);next()})
   }
@@ -801,50 +801,39 @@ function openReader(bookId){
   dGet('bookFiles',bookId).then(function(fr){
     if(!fr){hideLd();toast('Fichier introuvable');return}
     var pagesP;
-    if(bk.fileType==='pdf'){
+    // Direct pages format (extracted CBR/CB7)
+    if(fr.pages&&fr.pages.length){
+      var directPages=[];
+      fr.pages.forEach(function(p){
+        var blob=new Blob([p.data],{type:p.type||'image/jpeg'});
+        directPages.push({type:'image',url:URL.createObjectURL(blob)});
+      });
+      pagesP=Promise.resolve(directPages);
+    }else if(bk.fileType==='pdf'){
       pagesP=parsePDFPages(fr.data);
     }else if(bk.fileType==='epub'){
       pagesP=parseEPUBPages(fr.data);
     }else{
-      // Try ZIP first (CBZ, converted CBR), fallback to libarchive for raw RAR/7z
+      // Try ZIP (CBZ), fallback to libarchive
       pagesP=parseCBZPages(fr.data).catch(function(zipErr){
         console.log('[HR] ZIP failed:',zipErr.message,', trying libarchive...');
         if(!S.archReady||!S.Arch){
-          return Promise.reject(new Error('Extraction impossible: module CBR non charg\u00e9'));
+          return Promise.reject(new Error('Module CBR non charg\u00e9'));
         }
         showLd('Extraction en cours...');
         var file=new File([fr.data],(bk.title||'book')+'.'+(bk.fileType||'cbr'));
         return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
-          // DEBUG: log the full structure
+          S.debugLog='Extracted tree:\n';
           var dbg=[];
-          function debugTree(obj,depth){
-            if(!obj||typeof obj!=='object'||depth>5)return;
-            Object.keys(obj).forEach(function(k){
-              var v=obj[k];
-              var t=v===null?'null':v instanceof File?'File':v instanceof Blob?'Blob':Array.isArray(v)?'Array':typeof v;
-              var s=v&&v.size?v.size:0;
-              dbg.push(new Array(depth+1).join('  ')+k+' ['+t+(s?', '+s+'b':'')+']');
-              if(t==='object')debugTree(v,depth+1);
-            });
-          }
+          function debugTree(obj,depth){if(!obj||typeof obj!=='object'||depth>5)return;Object.keys(obj).forEach(function(k){var v=obj[k];var t=v===null?'null':v instanceof File?'File':v instanceof Blob?'Blob':Array.isArray(v)?'Array':typeof v;var s=v&&v.size?v.size:0;dbg.push(new Array(depth+1).join('  ')+k+' ['+t+(s?', '+s+'b':'')+']');if(t==='object')debugTree(v,depth+1)})}
           debugTree(extracted,0);
-          S.debugLog='Extracted tree:\n'+dbg.join('\n');
-          console.log('[HR] '+S.debugLog);
+          S.debugLog+=dbg.join('\n');
 
           var images=[];
           function walk(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&isImg(name)){images.push({path:full,file:val instanceof Blob||val instanceof File?val:new Blob([val])})}else if(val&&typeof val==='object'){walk(val,full)}})}
           walk(extracted,'');
-
-          S.debugLog+='\n\nImages found: '+images.length;
-          if(!images.length){
-            // Try broader detection: any leaf node regardless of extension
-            var allLeaves=[];
-            function walkAll(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&(typeof val!=='object'||val instanceof Blob||val instanceof File||val.size!==undefined)){allLeaves.push({path:full,name:name,type:val?val.constructor?val.constructor.name:'?':'null',size:val&&val.size?val.size:0})}else if(val&&typeof val==='object'){walkAll(val,full)}})}
-            walkAll(extracted,'');
-            S.debugLog+='\nAll leaves: '+allLeaves.length;
-            allLeaves.slice(0,5).forEach(function(l){S.debugLog+='\n  '+l.path+' ['+l.type+', '+l.size+'b]'});
-            throw new Error('Aucune image. Voir debug dans Param\u00e8tres');
-          }
+          S.debugLog+='\nImages found: '+images.length;
+          if(!images.length)throw new Error('Aucune image. Debug dans Param\u00e8tres');
           images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
           var pages=[];
           images.forEach(function(img){pages.push({type:'image',url:URL.createObjectURL(img.file)})});
