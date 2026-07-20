@@ -320,8 +320,8 @@ body {
 .reader-settings-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 8px; }
 .reader-content-area { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; }
 #readerContent { display: flex; align-items: center; justify-content: center; transform-origin: 0 0; height: 100%; width: 100%; }
-#readerContent img { max-height: 100%; max-width: 100%; object-fit: contain; display: none; image-rendering: auto; -webkit-image-rendering: optimizeQuality; }
-#readerContent canvas { max-height: 100%; object-fit: contain; display: none; image-rendering: auto; }
+#readerContent > img { max-height: 100%; max-width: 100%; object-fit: contain; display: none; image-rendering: auto; -webkit-image-rendering: optimizeQuality; }
+#readerContent > canvas { max-height: 100%; object-fit: contain; display: none; image-rendering: auto; }
 #readerContent.double-page { gap: 2px; }
 .reader-footer { background: rgba(0,0,0,0.85); padding: 8px 16px calc(8px + var(--safe-bottom)); display: flex; align-items: center; gap: 12px; z-index: 10; transition: opacity 0.3s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .reader-footer.fs-hidden { opacity: 0; pointer-events: none; }
@@ -418,6 +418,19 @@ body {
 .reader-html-content strong,.reader-html-content b { font-weight: 700; color: #fff; }
 .reader-html-content section { display: block; }
 .reader-html-content div { margin: 4px 0; }
+/* EPUB TOC panel */
+.epub-toc-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 80vw; background: rgba(15,15,25,0.97); z-index: 170; transform: translateX(-100%); transition: transform 0.3s; display: flex; flex-direction: column; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.epub-toc-panel.active { transform: translateX(0); }
+.epub-toc-header { padding: 16px; padding-top: calc(16px + var(--safe-top)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.epub-toc-header h3 { color: #fff; font-size: 15px; font-weight: 700; margin: 0; }
+.epub-toc-close { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 4px 8px; }
+.epub-toc-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 0; }
+.epub-toc-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; color: rgba(255,255,255,0.8); font-size: 14px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: inherit; transition: background 0.15s; }
+.epub-toc-item:active { background: rgba(255,255,255,0.08); }
+.epub-toc-item.current { color: var(--accent); font-weight: 600; }
+.epub-toc-item .toc-page { color: rgba(255,255,255,0.35); font-size: 12px; flex-shrink: 0; margin-left: 12px; }
+.epub-toc-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 165; display: none; }
+.epub-toc-overlay.active { display: block; }
 /* Sort in filter bar */
 .sort-select { flex-shrink: 0; }
 
@@ -552,9 +565,15 @@ body {
 <div id="readerView">
   <div class="reader-header" id="readerHeader">
     <button class="reader-back" id="readerBack"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg></button>
+    <button class="reader-settings-btn" id="readerTocBtn" style="display:none" title="Sommaire"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
     <div class="reader-title" id="readerTitle"></div>
     <div class="reader-page-info" id="readerPageInfo"></div>
     <button class="reader-settings-btn" id="readerSettingsBtn">&#x2699;&#xFE0F;</button>
+  </div>
+  <div class="epub-toc-overlay" id="epubTocOverlay"></div>
+  <div class="epub-toc-panel" id="epubTocPanel">
+    <div class="epub-toc-header"><h3>Sommaire</h3><button class="epub-toc-close" id="epubTocClose">&#x2715;</button></div>
+    <div class="epub-toc-list" id="epubTocList"></div>
   </div>
   <div class="reader-settings-panel" id="readerSettingsPanel">
     <div class="rs-label">Luminosit&#233;</div>
@@ -672,7 +691,39 @@ document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('cl
 function parseCBZCover(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});if(!imgs.length)return{cover:null,total:0};var sorted=sortPaths(imgs.map(function(i){return i.path}));var first=imgs.find(function(i){return i.path===sorted[0]});return first.entry.async('blob').then(function(bl){return{cover:bl,total:imgs.length}})})}
 function parseCBZPages(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});var sorted=sortPaths(imgs.map(function(i){return i.path}));var chain=Promise.resolve([]);sorted.forEach(function(p){chain=chain.then(function(pages){var entry=imgs.find(function(i){return i.path===p});return entry.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain})}
 function parsePDFCover(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){return pdf.getPage(1).then(function(page){var dpr=window.devicePixelRatio||1;var vp=page.getViewport({scale:0.5*dpr});var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise.then(function(){return new Promise(function(r){c.toBlob(function(bl){r({cover:bl,total:pdf.numPages})},'image/jpeg',0.8)})})})})}
-function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push({type:'pdf',pdfDoc:pdf,pageNum:i});return pages})}
+function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){
+  var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push({type:'pdf',pdfDoc:pdf,pageNum:i});
+  // Extract outline (bookmarks) for TOC
+  return pdf.getOutline().then(function(outline){
+    if(!outline||!outline.length)return pages;
+    // Resolve each outline item to a page number
+    var tocItems=[];
+    function flattenOutline(items,depth){
+      if(!items)return Promise.resolve();
+      var chain=Promise.resolve();
+      items.forEach(function(item){
+        chain=chain.then(function(){
+          if(!item.dest)return;
+          var destP=typeof item.dest==='string'?pdf.getDestination(item.dest):Promise.resolve(item.dest);
+          return destP.then(function(dest){
+            if(!dest||!dest[0])return;
+            return pdf.getPageIndex(dest[0]).then(function(idx){
+              tocItems.push({title:item.title,page:idx,depth:depth||0});
+            }).catch(function(){})
+          }).catch(function(){})
+        }).then(function(){
+          if(item.items&&item.items.length)return flattenOutline(item.items,(depth||0)+1);
+        })
+      });
+      return chain
+    }
+    return flattenOutline(outline,0).then(function(){
+      // Attach TOC data to the pages array
+      pages.pdfToc=tocItems;
+      return pages
+    })
+  }).catch(function(){return pages})
+})}
 function parseEPUBCover(buf){return JSZip.loadAsync(buf).then(function(zip){
   var containerFile=zip.file('META-INF/container.xml');
   if(!containerFile){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});var cv=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];if(!cv)return{cover:null,total:1};return cv.entry.async('blob').then(function(bl){return{cover:bl,total:Math.max(imgs.length,1)}})}
@@ -782,7 +833,7 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
                 if(pageIdx!==null)return'href="#" data-epub-page="'+pageIdx+'"';
                 return'href="#"';
               });
-              pages.push({type:'html',content:content});
+              pages.push({type:'html',content:content,title:rawHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?rawHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)[1].replace(/<[^>]+>/g,'').trim():(rawHtml.match(/<title[^>]*>([^<]+)<\/title>/i)?rawHtml.match(/<title[^>]*>([^<]+)<\/title>/i)[1].trim():'')});
               return pages
             })
           })
@@ -999,6 +1050,26 @@ function openReader(bookId){
       document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('active',b.dataset.mode===S.rMode)});
       document.querySelectorAll('[data-dir]').forEach(function(b){b.classList.toggle('active',b.dataset.dir===S.rDir)});
       $('readerView').classList.add('active');$('appHeader').classList.add('hidden');$('bottomNav').classList.add('hidden');$('fabAdd').style.display='none';
+      // Show TOC button for EPUB or PDF with bookmarks
+      var hasHtml=S.rPages.some(function(p){return p.type==='html'});
+      var hasPdfToc=S.rPages.pdfToc&&S.rPages.pdfToc.length>0;
+      $('readerTocBtn').style.display=(hasHtml||hasPdfToc)?'flex':'none';
+      if(hasHtml){
+        var tocHtml='';
+        S.rPages.forEach(function(p,i){
+          if(p.type==='html'&&p.title){
+            tocHtml+='<button class="epub-toc-item" data-toc-page="'+i+'"><span>'+p.title+'</span><span class="toc-page">'+(i+1)+'</span></button>';
+          }
+        });
+        $('epubTocList').innerHTML=tocHtml||'<div style="padding:16px;color:rgba(255,255,255,0.4);font-size:13px">Aucun chapitre d\u00e9tect\u00e9</div>';
+      }else if(hasPdfToc){
+        var tocHtml2='';
+        S.rPages.pdfToc.forEach(function(t){
+          var indent=t.depth>0?'padding-left:'+(16+t.depth*16)+'px':'';
+          tocHtml2+='<button class="epub-toc-item" data-toc-page="'+t.page+'" style="'+indent+'"><span>'+t.title+'</span><span class="toc-page">'+(t.page+1)+'</span></button>';
+        });
+        $('epubTocList').innerHTML=tocHtml2;
+      }
       hideLd();renderPage();initRTouch()
     })
   }).catch(function(err){hideLd();log('ERR','Read error:',err);log('ERR','Lecture: '+(err&&err.message?err.message:String(err)));toast('Erreur: '+(err&&err.message?err.message:String(err)))})
@@ -1088,8 +1159,15 @@ function goNext(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rM
 function goPrev(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage-step>=0){S.rPage-=step;renderPage()}else if(S.rPage>0){S.rPage=0;renderPage()}}
 $('readerSlider').addEventListener('input',function(e){S.rPage=parseInt(e.target.value)-1;renderPage()});
 $('readerBack').addEventListener('click',closeReader);
-function closeReader(){S.rPages.forEach(function(p){if(p.type==='image'&&p.url&&p.url.indexOf('blob:')===0)URL.revokeObjectURL(p.url)});S.rPages=[];S.rBook=null;if(S.rAC)S.rAC.abort();$('readerView').classList.remove('active');$('appHeader').classList.remove('hidden');$('bottomNav').classList.remove('hidden');$('fabAdd').style.display='flex';$('readerSettingsPanel').classList.remove('active');$('readerContent').style.transform='';$('readerContentArea').style.filter='';$('readerHtmlWrap').style.display='none';$('readerHtmlContent').innerHTML='';loadBooks()}
+function closeReader(){S.rPages.forEach(function(p){if(p.type==='image'&&p.url&&p.url.indexOf('blob:')===0)URL.revokeObjectURL(p.url)});S.rPages=[];S.rBook=null;if(S.rAC)S.rAC.abort();$('readerView').classList.remove('active');$('appHeader').classList.remove('hidden');$('bottomNav').classList.remove('hidden');$('fabAdd').style.display='flex';$('readerSettingsPanel').classList.remove('active');$('readerContent').style.transform='';$('readerContentArea').style.filter='';$('readerHtmlWrap').style.display='none';$('readerHtmlContent').innerHTML='';$('epubTocPanel').classList.remove('active');$('epubTocOverlay').classList.remove('active');$('readerTocBtn').style.display='none';loadBooks()}
 $('readerSettingsBtn').addEventListener('click',function(){$('readerSettingsPanel').classList.toggle('active')});
+/* EPUB TOC */
+function openToc(){$('epubTocOverlay').classList.add('active');$('epubTocPanel').classList.add('active');$('epubTocList').querySelectorAll('.epub-toc-item').forEach(function(it){it.classList.toggle('current',parseInt(it.dataset.tocPage)===S.rPage)});$('readerSettingsPanel').classList.remove('active')}
+function closeToc(){$('epubTocOverlay').classList.remove('active');$('epubTocPanel').classList.remove('active')}
+$('readerTocBtn').addEventListener('click',openToc);
+$('epubTocClose').addEventListener('click',closeToc);
+$('epubTocOverlay').addEventListener('click',closeToc);
+$('epubTocList').addEventListener('click',function(e){var btn=e.target.closest('[data-toc-page]');if(!btn)return;var pg=parseInt(btn.dataset.tocPage);if(!isNaN(pg)&&pg>=0&&pg<S.rPages.length){S.rPage=pg;renderPage();closeToc()}});
 document.querySelectorAll('[data-mode]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-mode]').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.rMode=b.dataset.mode;renderPage()})});
 document.querySelectorAll('[data-dir]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-dir]').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.rDir=b.dataset.dir;$('readerSlider').style.direction=S.rDir;renderPage()})});
 $('brightnessSlider').addEventListener('input',function(e){S.bri=parseInt(e.target.value);$('readerContentArea').style.filter='brightness('+S.bri+'%)'});
