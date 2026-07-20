@@ -520,6 +520,7 @@ body {
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
       <div class="setting-row"><button class="setting-btn" id="refreshBtn">&#x1F503; Actualiser la biblioth&#232;que</button></div>
+      <div class="setting-row"><button class="setting-btn" id="debugBtn">&#x1F41B; Voir le journal de debug</button></div>
     </div>
   </div>
 </main>
@@ -814,10 +815,36 @@ function openReader(bookId){
         showLd('Extraction en cours...');
         var file=new File([fr.data],(bk.title||'book')+'.'+(bk.fileType||'cbr'));
         return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
+          // DEBUG: log the full structure
+          var dbg=[];
+          function debugTree(obj,depth){
+            if(!obj||typeof obj!=='object'||depth>5)return;
+            Object.keys(obj).forEach(function(k){
+              var v=obj[k];
+              var t=v===null?'null':v instanceof File?'File':v instanceof Blob?'Blob':Array.isArray(v)?'Array':typeof v;
+              var s=v&&v.size?v.size:0;
+              dbg.push(new Array(depth+1).join('  ')+k+' ['+t+(s?', '+s+'b':'')+']');
+              if(t==='object')debugTree(v,depth+1);
+            });
+          }
+          debugTree(extracted,0);
+          S.debugLog='Extracted tree:\n'+dbg.join('\n');
+          console.log('[HR] '+S.debugLog);
+
           var images=[];
           function walk(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&isImg(name)){images.push({path:full,file:val instanceof Blob||val instanceof File?val:new Blob([val])})}else if(val&&typeof val==='object'){walk(val,full)}})}
           walk(extracted,'');
-          if(!images.length)throw new Error('Aucune image trouv\u00e9e');
+
+          S.debugLog+='\n\nImages found: '+images.length;
+          if(!images.length){
+            // Try broader detection: any leaf node regardless of extension
+            var allLeaves=[];
+            function walkAll(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&(typeof val!=='object'||val instanceof Blob||val instanceof File||val.size!==undefined)){allLeaves.push({path:full,name:name,type:val?val.constructor?val.constructor.name:'?':'null',size:val&&val.size?val.size:0})}else if(val&&typeof val==='object'){walkAll(val,full)}})}
+            walkAll(extracted,'');
+            S.debugLog+='\nAll leaves: '+allLeaves.length;
+            allLeaves.slice(0,5).forEach(function(l){S.debugLog+='\n  '+l.path+' ['+l.type+', '+l.size+'b]'});
+            throw new Error('Aucune image. Voir debug dans Param\u00e8tres');
+          }
           images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
           var pages=[];
           images.forEach(function(img){pages.push({type:'image',url:URL.createObjectURL(img.file)})});
@@ -928,6 +955,7 @@ $('updateBtn').addEventListener('click',function(){window.location.reload()});
 $('headerRefresh').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Actualis\u00e9 !')})});
 $('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.update().then(function(){toast('V\u00e9rification termin\u00e9e')}).catch(function(){toast('Erreur de v\u00e9rification')})}else{toast('Service Worker non disponible')}});
 $('refreshBtn').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Biblioth\u00e8que actualis\u00e9e !')})});
+$('debugBtn').addEventListener('click',function(){alert(S.debugLog||'Aucun log. Essayez d\'ouvrir un CBR d\'abord.')});
 
 /* INIT */
 uClock();setInterval(uClock,30000);uBat();loadSet();
