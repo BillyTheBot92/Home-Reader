@@ -516,7 +516,6 @@ body {
         </select>
       </div>
     </div>
-    <!-- Search overlay -->
     <div class="search-overlay" id="searchOverlay">
       <div class="search-bar-inner">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-sec)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -553,10 +552,11 @@ body {
       <div class="setting-row"><span class="setting-label">&#x1F4C4; Mode par d&#233;faut</span><select class="setting-select" id="defaultMode"><option value="single">Page simple</option><option value="double">Double page</option><option value="vertical">D&#233;filement vertical</option></select></div>
       <div class="settings-section">Stockage</div>
       <div class="setting-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><span class="setting-label">&#x1F4BE; Espace utilis&#233;</span><span class="setting-value" id="storageInfo">Calcul...</span></div><div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div></div>
+      <div class="setting-row"><span class="setting-label">Moteur de stockage</span><span class="setting-value" id="storageEngine">---</span></div>
       <div class="setting-row"><button class="setting-btn" id="clearCacheBtn">&#x1F5D1;&#xFE0F; Effacer le cache</button></div>
       <div class="setting-row"><button class="setting-btn danger-text" id="clearDataBtn">&#x26A0;&#xFE0F; Effacer les donn&#233;es</button></div>
       <div class="settings-section">&#192; propos</div>
-      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.5.0</span></div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.6.0</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
@@ -590,7 +590,6 @@ body {
     <div class="load-progress-bar"><div class="load-progress-fill" id="loadProgressFill"></div></div>
     <span class="load-progress-pct" id="loadProgressPct">0%</span>
   </div>
-  <button class="load-cancel" id="loadCancel" style="display:none">Annuler</button>
 </div>
 <div class="book-detail-overlay" id="bookDetailOverlay"><div class="book-detail" id="bookDetail"></div></div>
 <div class="modal-overlay" id="confirmOverlay"><div class="modal" id="confirmBox"></div></div>
@@ -654,8 +653,8 @@ body {
 
 <script src="libarchive.js"></script>
 <script>
-/* HOME READER v1.5.0 */
-var VER='1.5.0';
+/* HOME READER v1.6.0 — OPFS storage + CBR raw import */
+var VER='1.6.0';
 
 /* GLOBAL LOG SYSTEM */
 var LOG=[];
@@ -680,6 +679,7 @@ function downloadLog(){
   text+='Date: '+new Date().toLocaleString('fr-FR')+'\n';
   text+='UserAgent: '+navigator.userAgent+'\n';
   text+='archReady: '+S.archReady+' | archFailed: '+(S.archFailed||false)+'\n';
+  text+='OPFS: '+S.useOPFS+'\n';
   text+='Books: '+S.books.length+'\n';
   text+='='.repeat(50)+'\n\n';
   text+=LOG.join('\n');
@@ -694,23 +694,23 @@ if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https:/
 var S={db:null,books:[],colls:[],filter:'all',sort:'recent',search:'',pFiles:null,pCat:null,
 rBook:null,rPages:[],rPage:0,rMode:'single',rDir:'ltr',rFS:false,rScale:1,rTx:0,rTy:0,
 tSX:0,tSY:0,tST:0,lastTap:0,pinchD:0,pinchS:1,pinching:false,panning:false,panX:0,panY:0,
-theme:'light',gs:'110',dDir:'ltr',dMode:'single',bri:100,epubTheme:'nuit',epubFont:'Inter',archReady:false,Arch:null,viewColl:null,rAC:null};
+theme:'light',gs:'110',dDir:'ltr',dMode:'single',bri:100,epubTheme:'nuit',epubFont:'Inter',
+archReady:false,archFailed:false,Arch:null,viewColl:null,rAC:null,
+useOPFS:false,opfsRoot:null};
 
 function $(id){return document.getElementById(id)}
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
-function showLd(m){$('loadingText').textContent=m||'Chargement...';$('loadingOverlay').classList.add('active')}
+function showLd(m){$('loadingText').textContent=m||'Chargement...';$('loadProgress').style.display='none';$('loadingOverlay').classList.add('active')}
 function hideLd(){$('loadingOverlay').classList.remove('active')}
 function isImg(n){return/\.(jpe?g|png|gif|webp|bmp|avif)$/i.test(n)}
 function sortPaths(a){return a.slice().sort(function(x,y){var nx=x.replace(/\D/g,'').padStart(10,'0'),ny=y.replace(/\D/g,'').padStart(10,'0');return nx<ny?-1:nx>ny?1:x.localeCompare(y)})}
 function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onloadend=function(){r(fr.result)};fr.readAsDataURL(blob)})}
 function pad(v){return v<10?'0'+v:''+v}
 function withTimeout(p,ms,msg){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error(msg||'Timeout'))},ms)})])}
-
-/* CLOCK + BATTERY */
 function uClock(){}
 function uBat(){}
 
-/* LIBARCHIVE - LOCAL (no CDN) */
+/* LIBARCHIVE - LOCAL */
 function initArch(){
   try{
     window.LibArchive.init({getWorker:function(){return new Worker('libarchive-worker.js')}});
@@ -727,7 +727,7 @@ function updCbrStatus(){
   else el.textContent='\u23F3 Chargement...';
 }
 
-/* DB */
+/* ===== INDEXEDDB ===== */
 function openDB(){return new Promise(function(ok,no){var r=indexedDB.open('HomeReaderDB',2);r.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('books')){var s=db.createObjectStore('books',{keyPath:'id',autoIncrement:true});s.createIndex('category','category')}if(!db.objectStoreNames.contains('bookFiles'))db.createObjectStore('bookFiles',{keyPath:'id'});if(!db.objectStoreNames.contains('collections'))db.createObjectStore('collections',{keyPath:'id',autoIncrement:true})};r.onsuccess=function(e){S.db=e.target.result;ok()};r.onerror=function(e){no(e.target.error)}})}
 function dTx(s,m){return S.db.transaction(s,m||'readonly').objectStore(s)}
 function dAll(s){return new Promise(function(r,j){var q=dTx(s).getAll();q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
@@ -735,20 +735,97 @@ function dGet(s,id){return new Promise(function(r,j){var q=dTx(s).get(id);q.onsu
 function dPut(s,d){return new Promise(function(r,j){var tx=S.db.transaction(s,'readwrite');var st=tx.objectStore(s);var q=d.id?st.put(d):st.add(d);q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
 function dDel(s,id){return new Promise(function(r,j){var q=dTx(s,'readwrite').delete(id);q.onsuccess=function(){r()};q.onerror=function(){j(q.error)}})}
 
+/* ===== OPFS STORAGE LAYER (H5) ===== */
+function initOPFS(){
+  if(!navigator.storage||!navigator.storage.getDirectory){
+    log('INFO','OPFS not supported');updStorageEngine();return Promise.resolve()
+  }
+  return navigator.storage.getDirectory().then(function(root){
+    S.opfsRoot=root;S.useOPFS=true;
+    log('INFO','OPFS available');updStorageEngine();
+  }).catch(function(e){
+    log('WARN','OPFS init failed:',e);updStorageEngine();
+  })
+}
+function updStorageEngine(){
+  var el=$('storageEngine');
+  if(el)el.textContent=S.useOPFS?'OPFS (rapide)':'IndexedDB';
+}
+function opfsPut(id,buffer){
+  return S.opfsRoot.getFileHandle('book_'+id,{create:true}).then(function(fh){
+    return fh.createWritable()
+  }).then(function(w){
+    return w.write(buffer).then(function(){return w.close()})
+  })
+}
+function opfsGet(id){
+  return S.opfsRoot.getFileHandle('book_'+id).then(function(fh){
+    return fh.getFile()
+  }).then(function(f){
+    return f.arrayBuffer()
+  })
+}
+function opfsDel(id){
+  return S.opfsRoot.removeEntry('book_'+id).catch(function(){})
+}
+/* Smart wrappers: OPFS if available, fallback IDB */
+function storeFile(id,buffer){
+  if(S.useOPFS){
+    return opfsPut(id,buffer).then(function(){
+      return dPut('bookFiles',{id:id,storage:'opfs'})
+    }).catch(function(e){
+      log('WARN','OPFS write failed, fallback IDB:',e);
+      return dPut('bookFiles',{id:id,data:buffer})
+    })
+  }
+  return dPut('bookFiles',{id:id,data:buffer})
+}
+function loadFile(id){
+  return dGet('bookFiles',id).then(function(fr){
+    if(!fr)return null;
+    if(fr.storage==='opfs'){
+      if(!S.useOPFS){log('WARN','OPFS marker but unavailable for book',id);return null}
+      return opfsGet(id).then(function(buf){
+        return{id:id,data:buf}
+      }).catch(function(e){
+        log('ERR','OPFS read failed:',e);return null
+      })
+    }
+    return fr
+  })
+}
+function deleteFile(id){
+  return dGet('bookFiles',id).then(function(fr){
+    if(fr&&fr.storage==='opfs'&&S.useOPFS)return opfsDel(id);
+  }).then(function(){
+    return dDel('bookFiles',id)
+  })
+}
+function clearOPFS(){
+  if(!S.useOPFS||!S.opfsRoot)return Promise.resolve();
+  return dAll('bookFiles').then(function(files){
+    var chain=Promise.resolve();
+    files.forEach(function(f){
+      if(f.storage==='opfs'){
+        chain=chain.then(function(){return opfsDel(f.id)})
+      }
+    });
+    return chain
+  }).catch(function(e){log('WARN','clearOPFS:',e)})
+}
+
 /* NAV */
 function goPage(id){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});$(id).classList.add('active');document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.page===id)});$('fabAdd').style.display=id==='pageLibrary'?'flex':'none';$('fabSearch').style.display=id==='pageLibrary'?'flex':'none'}
 document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('click',function(){goPage(b.dataset.page)})});
 
-/* PARSERS */
+/* ===== PARSERS ===== */
 function parseCBZCover(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});if(!imgs.length)return{cover:null,total:0};var sorted=sortPaths(imgs.map(function(i){return i.path}));var first=imgs.find(function(i){return i.path===sorted[0]});return first.entry.async('blob').then(function(bl){return{cover:bl,total:imgs.length}})})}
 function parseCBZPages(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});var sorted=sortPaths(imgs.map(function(i){return i.path}));var chain=Promise.resolve([]);sorted.forEach(function(p){chain=chain.then(function(pages){var entry=imgs.find(function(i){return i.path===p});return entry.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain})}
 function parsePDFCover(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){return pdf.getPage(1).then(function(page){var dpr=window.devicePixelRatio||1;var vp=page.getViewport({scale:0.5*dpr});var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise.then(function(){return new Promise(function(r){c.toBlob(function(bl){r({cover:bl,total:pdf.numPages})},'image/jpeg',0.8)})})})})}
 function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){
   var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push({type:'pdf',pdfDoc:pdf,pageNum:i});
-  // Extract outline (bookmarks) for TOC
   return pdf.getOutline().then(function(outline){
     if(!outline||!outline.length)return pages;
-    // Resolve each outline item to a page number
     var tocItems=[];
     function flattenOutline(items,depth){
       if(!items)return Promise.resolve();
@@ -770,9 +847,7 @@ function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then
       return chain
     }
     return flattenOutline(outline,0).then(function(){
-      // Attach TOC data to the pages array
-      pages.pdfToc=tocItems;
-      return pages
+      pages.pdfToc=tocItems;return pages
     })
   }).catch(function(){return pages})
 })}
@@ -784,19 +859,16 @@ function parseEPUBCover(buf){return JSZip.loadAsync(buf).then(function(zip){
     var opfPath=m[1];var opfFile=zip.file(opfPath);if(!opfFile)return{cover:null,total:1};
     var base=opfPath.replace(/[^/]*$/,'');
     return opfFile.async('text').then(function(opfXml){
-      // Count spine items for totalPages
       var spineIds=[];var sr=/idref="([^"]+)"/g;var si;
       var spineBlock=opfXml.match(/<spine[^>]*>([\s\S]*?)<\/spine>/);
       if(spineBlock){var sr2=/idref="([^"]+)"/g;while((si=sr2.exec(spineBlock[1]))!==null)spineIds.push(si[1])}
       var total=spineIds.length||1;
-      // Find cover image via OPF meta
       var cm=opfXml.match(/name="cover"\s+content="([^"]+)"/)||opfXml.match(/content="([^"]+)"\s+name="cover"/);
       if(cm){
         var coverId=cm[1];
         var im=opfXml.match(new RegExp('id="'+coverId.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'"[^>]*href="([^"]+)"'));
         if(im){var cf=zip.file(base+im[1]);if(cf)return cf.async('blob').then(function(bl){return{cover:bl,total:total}})}
       }
-      // Fallback: find cover in first XHTML or first image
       var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p.toLowerCase(),entry:e})});
       var cv2=imgs.find(function(f){return f.path.includes('cover')})||imgs[0];
       if(!cv2)return{cover:null,total:total};
@@ -820,7 +892,6 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
     if(!opfFile)return fallbackEPUBImages(zip);
     var base=opfPath.replace(/[^/]*$/,'');
     return opfFile.async('text').then(function(opfXml){
-      // Parse manifest
       var manifest={};
       var mBlock=opfXml.match(/<manifest[^>]*>([\s\S]*?)<\/manifest>/);
       if(mBlock){var itemRe=/<item\s+([^>]*)\/?\s*>/g;var im2;
@@ -830,34 +901,18 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
           if(idM&&hrefM)manifest[idM[1]]={href:hrefM[1],type:mtM?mtM[1]:''}
         }
       }
-      // Parse spine
       var spineIds=[];var spineBlock=opfXml.match(/<spine[^>]*>([\s\S]*?)<\/spine>/);
       if(spineBlock){var sr=/idref="([^"]+)"/g;var si;while((si=sr.exec(spineBlock[1]))!==null)spineIds.push(si[1])}
       if(!spineIds.length)return fallbackEPUBImages(zip);
       var hasXhtml=spineIds.some(function(id){var it=manifest[id];return it&&(it.type.indexOf('xhtml')>=0||it.type.indexOf('html')>=0)});
       if(!hasXhtml)return fallbackEPUBImages(zip);
-
-      // STEP 1: Pre-extract ALL images to blob URLs
-      var imgUrlMap={};
-      var imgEntries=[];
+      var imgUrlMap={};var imgEntries=[];
       zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgEntries.push({path:p,entry:e})});
       var imgChain=Promise.resolve();
-      imgEntries.forEach(function(ie){
-        imgChain=imgChain.then(function(){
-          return ie.entry.async('blob').then(function(bl){
-            imgUrlMap[ie.path]=URL.createObjectURL(bl);
-          })
-        })
-      });
-
-      // STEP 2: Build filename→pageIndex map for sommaire links
+      imgEntries.forEach(function(ie){imgChain=imgChain.then(function(){return ie.entry.async('blob').then(function(bl){imgUrlMap[ie.path]=URL.createObjectURL(bl)})})});
       var fileToPage={};
-      spineIds.forEach(function(id,idx){
-        var it=manifest[id];if(it)fileToPage[it.href]=idx;
-      });
-
+      spineIds.forEach(function(id,idx){var it=manifest[id];if(it)fileToPage[it.href]=idx});
       return imgChain.then(function(){
-        // STEP 3: Extract each spine item as a page
         var pageChain=Promise.resolve([]);
         spineIds.forEach(function(id){
           pageChain=pageChain.then(function(pages){
@@ -868,20 +923,14 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
               var content=rawHtml.replace(/<link[^>]*>/gi,'').replace(/<style[^>]*>[\s\S]*?<\/style>/gi,'');
               var bodyM=content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
               content=bodyM?bodyM[1]:content;
-              // Replace all src="..." with pre-extracted blob URLs
               content=content.replace(/src="([^"]+)"/gi,function(match,src){
                 if(src.indexOf('blob:')===0||src.indexOf('data:')===0)return match;
                 var resolved=resolveEpubPath(filePath,src);
                 return imgUrlMap[resolved]?'src="'+imgUrlMap[resolved]+'"':match;
               });
-              // Convert internal links to chapter navigation
               content=content.replace(/href="([^"]*\.x?html)([^"]*)"/gi,function(match,file,hash){
-                var fname=file.split('/').pop();
-                // Find the file in fileToPage
-                var pageIdx=null;
-                Object.keys(fileToPage).forEach(function(k){
-                  if(k===fname||k===file||decodeURIComponent(k)===fname)pageIdx=fileToPage[k];
-                });
+                var fname=file.split('/').pop();var pageIdx=null;
+                Object.keys(fileToPage).forEach(function(k){if(k===fname||k===file||decodeURIComponent(k)===fname)pageIdx=fileToPage[k]});
                 if(pageIdx!==null)return'href="#" data-epub-page="'+pageIdx+'"';
                 return'href="#"';
               });
@@ -897,47 +946,50 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
 })}
 function fallbackEPUBImages(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});imgs.sort(function(a,b){return a.path.localeCompare(b.path)});var chain=Promise.resolve([]);imgs.forEach(function(f){chain=chain.then(function(pages){return f.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain}
 
-/* CBR/CB7 EXTRACTION (direct images, no re-zip) */
-var cancelRequested=false;
-function extractCBR(buf,fname,onProgress){
+/* ===== CBR PARSERS (H5 — cover-only import + on-the-fly reading) ===== */
+function parseCBRCover(buf,fname){
   if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non disponible'));
-  cancelRequested=false;
-  var file=new File([buf],fname);
-  return new Promise(function(resolve,reject){
-    var timer=setTimeout(function(){reject(new Error('Timeout (60s)'))},60000);
-    S.Arch.open(file).then(function(archive){
-      return archive.extractFiles()
-    }).then(function(extracted){
-      clearTimeout(timer);
-      if(cancelRequested){reject(new Error('Annul\u00e9'));return}
-      var images=[];
-      function walk(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&isImg(name)){images.push({path:full,file:val instanceof Blob||val instanceof File?val:new Blob([val])})}else if(val&&typeof val==='object'){walk(val,full)}})}
-      walk(extracted,'');
-      if(!images.length){reject(new Error('Aucune image trouv\u00e9e'));return}
-      images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
-      // Store images directly as ArrayBuffers (no re-zip)
-      var pageBuffers=[];var done=0;var total=images.length;
-      var chain=Promise.resolve();
-      images.forEach(function(img,i){
-        chain=chain.then(function(){
-          if(cancelRequested)throw new Error('Annul\u00e9');
-          return img.file.arrayBuffer().then(function(ab){
-            pageBuffers.push({data:ab,type:img.file.type||'image/jpeg'});
-            done++;
-            if(onProgress)onProgress(done,total);
-          })
-        })
-      });
-      chain.then(function(){
-        // Get cover from first image
-        var coverBlob=new Blob([pageBuffers[0].data],{type:pageBuffers[0].type});
-        resolve({pages:pageBuffers,cover:coverBlob,total:images.length})
-      }).catch(reject)
-    }).catch(function(e){clearTimeout(timer);reject(e)})
+  var file=new File([buf],fname||'book.cbr');
+  var archRef;
+  return S.Arch.open(file).then(function(archive){
+    archRef=archive;
+    return archive.getFilesArray()
+  }).then(function(files){
+    var imgs=files.filter(function(f){return f.file&&isImg(f.file.name||'')});
+    if(!imgs.length){if(archRef)archRef.close();return{cover:null,total:0}}
+    imgs.sort(function(a,b){
+      var pa=(a.path+a.file.name).replace(/\D/g,'').padStart(10,'0');
+      var pb=(b.path+b.file.name).replace(/\D/g,'').padStart(10,'0');
+      return pa<pb?-1:pa>pb?1:0
+    });
+    return imgs[0].file.extract().then(function(coverFile){
+      if(archRef)archRef.close();
+      var blob=coverFile instanceof Blob?coverFile:new Blob([coverFile]);
+      return{cover:blob,total:imgs.length}
+    })
+  }).catch(function(e){
+    if(archRef)try{archRef.close()}catch(x){}
+    throw e
+  })
+}
+function parseCBRPages(buf,fname){
+  if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non disponible'));
+  var file=new File([buf],fname||'book.cbr');
+  return S.Arch.open(file).then(function(archive){
+    return archive.extractFiles()
+  }).then(function(extracted){
+    var images=[];
+    function walk(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&isImg(name)){images.push({path:full,file:val instanceof Blob||val instanceof File?val:new Blob([val])})}else if(val&&typeof val==='object'){walk(val,full)}})}
+    walk(extracted,'');
+    if(!images.length)throw new Error('Aucune image trouv\u00e9e');
+    images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
+    var pages=[];
+    images.forEach(function(img){pages.push({type:'image',url:URL.createObjectURL(img.file)})});
+    return pages
   })
 }
 
-/* IMPORT */
+/* ===== IMPORT ===== */
 $('fabAdd').addEventListener('click',function(){$('fileInput').click()});
 $('fileInput').addEventListener('change',function(e){if(e.target.files.length>0){S.pFiles=Array.from(e.target.files);S.pCat=null;document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});$('importConfirm').disabled=true;$('importModal').classList.add('active')}e.target.value=''});
 document.querySelectorAll('.cat-option').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});b.classList.add('selected');S.pCat=b.dataset.cat;$('importConfirm').disabled=false})});
@@ -950,36 +1002,29 @@ $('importConfirm').addEventListener('click',function(){
     var file=files[idx++],ext=file.name.split('.').pop().toLowerCase();
     file.arrayBuffer().then(function(buffer){
       var coverP;
-      if(ext==='cbz'){coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}})}
-      else if(ext==='cbr'||ext==='cb7'){
-        coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}}).catch(function(){
+      if(ext==='cbz'){
+        coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}})
+      }else if(ext==='cbr'||ext==='cb7'){
+        coverP=parseCBZCover(buffer).then(function(r){
+          return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}
+        }).catch(function(){
           if(!S.archReady){
             if(S.archFailed)toast('Module CBR non disponible');
             else toast('Module CBR en chargement, r\u00e9essayez');
             return null
           }
-          // Show progress UI
-          $('loadProgress').style.display='flex';$('loadCancel').style.display='block';
-          $('loadingText').textContent='Extraction '+ext.toUpperCase()+'...';
-          $('loadProgressFill').style.width='0%';$('loadProgressPct').textContent='0%';
-          cancelRequested=false;
-          return extractCBR(buffer,file.name,function(done,total){
-            var pct=Math.round((done/total)*100);
-            $('loadProgressFill').style.width=pct+'%';
-            $('loadProgressPct').textContent=pct+'%';
-            $('loadingText').textContent='Extraction page '+done+'/'+total;
-          }).then(function(result){
-            $('loadProgress').style.display='none';$('loadCancel').style.display='none';
-            return{cover:result.cover,total:result.total,pages:result.pages,st:'images'}
+          $('loadingText').textContent='Analyse '+ext.toUpperCase()+'...';
+          return parseCBRCover(buffer,file.name).then(function(result){
+            return{cover:result.cover,total:result.total,buf:buffer,st:'cbr'}
           }).catch(function(e){
-            $('loadProgress').style.display='none';$('loadCancel').style.display='none';
-            toast(e.message==='Annul\u00e9'?'Import annul\u00e9':'Erreur: '+e.message);
-            log('ERR',e.message||e);return null
+            toast('Erreur: '+e.message);log('ERR',e.message||e);return null
           })
         })
-      }else if(ext==='pdf'){coverP=withTimeout(parsePDFCover(buffer.slice(0)),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})}
-      else if(ext==='epub'){coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})}
-      else{toast('Format non reconnu: '+ext);next();return}
+      }else if(ext==='pdf'){
+        coverP=withTimeout(parsePDFCover(buffer.slice(0)),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})
+      }else if(ext==='epub'){
+        coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})
+      }else{toast('Format non reconnu: '+ext);next();return}
       coverP.then(function(res){
         if(!res){next();return}
         var cvP2=res.cover?b64(res.cover):Promise.resolve(null);
@@ -988,20 +1033,19 @@ $('importConfirm').addEventListener('click',function(){
           return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'})
         }).then(function(bookId){
           savedId=bookId;
-          if(res.pages){return dPut('bookFiles',{id:bookId,pages:res.pages})}
-          else{return dPut('bookFiles',{id:bookId,data:res.buf})}
+          return storeFile(bookId,res.buf)
         }).then(function(){count++;next()}).catch(function(e){
           log('ERR','Import store error:',e);
           if(savedId)dDel('books',savedId).catch(function(){});
           log('ERR','Import: '+(e.message||e));toast('Erreur: '+(e.message||e));next()
         })
       })
-    }).catch(function(e){log('ERR','Read error:',e);log('ERR','Import: '+(e.message||e));toast('Erreur: '+(e.message||e));next()})
+    }).catch(function(e){log('ERR','Read error:',e);toast('Erreur: '+(e.message||e));next()})
   }
   next()
 });
 
-/* LIBRARY */
+/* ===== LIBRARY ===== */
 function loadBooks(){return dAll('books').then(function(b){S.books=b;renderLib();renderResume();uStorage()})}
 function filtered(){var b=S.books.slice(),f=S.filter;if(f==='BD'||f==='Manga'||f==='Autres')b=b.filter(function(x){return x.category===f});else if(f==='favorites')b=b.filter(function(x){return x.favorite});else if(f==='reading')b=b.filter(function(x){return x.status==='reading'});else if(f==='finished')b=b.filter(function(x){return x.status==='finished'});if(S.search){var q=S.search.toLowerCase();b=b.filter(function(x){return x.title.toLowerCase().indexOf(q)>=0})}if(S.sort==='name')b.sort(function(a,c){return a.title.localeCompare(c.title)});else if(S.sort==='lastread')b.sort(function(a,c){return(c.lastRead||0)-(a.lastRead||0)});else if(S.sort==='progress')b.sort(function(a,c){var pa=a.totalPages?(a.currentPage/a.totalPages):0;var pc=c.totalPages?(c.currentPage/c.totalPages):0;return pc-pa});else b.sort(function(a,c){return c.dateAdded-a.dateAdded});return b}
 var PH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Crect fill='%23ddd' width='100' height='140'/%3E%3Ctext x='50' y='75' text-anchor='middle' fill='%23999' font-size='14'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E";
@@ -1014,6 +1058,7 @@ function renderLib(){
   g.addEventListener('contextmenu',function(e){e.preventDefault()})
 }
 function renderResume(){var bar=$('resumeBar');var rd=S.books.filter(function(b){return b.status==='reading'&&b.lastRead}).sort(function(a,b){return b.lastRead-a.lastRead});if(!rd.length){bar.style.display='none';return}var bk=rd[0],pct=Math.round((bk.currentPage/bk.totalPages)*100);bar.style.display='block';bar.innerHTML='<div class="lib-resume" id="resBtn"><img src="'+(bk.cover||'')+'" alt=""><div class="lib-resume-info"><div class="lib-resume-title">'+bk.title+'</div><div class="lib-resume-sub">Page '+(bk.currentPage+1)+'/'+bk.totalPages+' \u00B7 '+pct+'%</div></div><button class="lib-resume-btn">Reprendre \u25B6</button></div>';$('resBtn').addEventListener('click',function(){openReader(bk.id)})}
+
 /* DETAIL */
 function showDetail(id){var bk=S.books.find(function(b){return b.id===id});if(!bk)return;var pct=bk.totalPages?Math.round((bk.currentPage/bk.totalPages)*100):0;var d=$('bookDetail');d.innerHTML='<div class="book-detail-header"><img class="book-detail-cover" src="'+(bk.cover||'')+'" alt=""><div class="book-detail-info"><div class="book-detail-title">'+bk.title+'</div><div class="book-detail-meta">'+bk.category+' \u00B7 '+bk.totalPages+' pages \u00B7 '+bk.fileType.toUpperCase()+'</div><div class="book-detail-progress">'+(bk.status==='reading'?'Page '+(bk.currentPage+1)+'/'+bk.totalPages+' ('+pct+'%)':bk.status==='finished'?'Termin\u00e9 \u2713':'Non lu')+'</div></div></div><div class="book-detail-actions"><button class="detail-action" data-a="read"><span class="da-icon">'+(bk.status==='reading'?'\u25B6\uFE0F':'\uD83D\uDCD6')+'</span>'+(bk.status==='reading'?'Reprendre':'Commencer')+'</button><button class="detail-action" data-a="fav"><span class="da-icon">'+(bk.favorite?'\u2B50':'\u2606')+'</span>'+(bk.favorite?'Retirer des favoris':'Ajouter aux favoris')+'</button><button class="detail-action" data-a="rename"><span class="da-icon">\u270F\uFE0F</span>Renommer</button><button class="detail-action" data-a="coll"><span class="da-icon">\uD83D\uDCC1</span>'+(bk.collectionId?'Changer de collection':'Ajouter \u00e0 une collection')+'</button><button class="detail-action" data-a="rst"><span class="da-icon">\uD83D\uDD04</span>Recommencer</button><button class="detail-action danger" data-a="del"><span class="da-icon">\uD83D\uDDD1\uFE0F</span>Supprimer</button></div>';
   d.querySelector('[data-a="read"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');openReader(id)});
@@ -1021,7 +1066,7 @@ function showDetail(id){var bk=S.books.find(function(b){return b.id===id});if(!b
   d.querySelector('[data-a="coll"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');showAssign(id)});
   d.querySelector('[data-a="rename"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');var newName=prompt('Nouveau nom :',bk.title);if(newName&&newName.trim()){bk.title=newName.trim();dPut('books',bk).then(function(){loadBooks();toast('Renomm\u00e9 !')})}});
   d.querySelector('[data-a="rst"]').addEventListener('click',function(){bk.currentPage=0;bk.status='unread';bk.lastRead=null;dPut('books',bk).then(function(){$('bookDetailOverlay').classList.remove('active');loadBooks();toast('R\u00e9initialis\u00e9')})});
-  d.querySelector('[data-a="del"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');confirm2('Supprimer','Supprimer ce livre ?',function(){dDel('books',id).then(function(){return dDel('bookFiles',id)}).then(function(){loadBooks();toast('Supprim\u00e9 !')})})});
+  d.querySelector('[data-a="del"]').addEventListener('click',function(){$('bookDetailOverlay').classList.remove('active');confirm2('Supprimer','Supprimer ce livre ?',function(){dDel('books',id).then(function(){return deleteFile(id)}).then(function(){loadBooks();toast('Supprim\u00e9 !')})})});
   $('bookDetailOverlay').classList.add('active')
 }
 $('bookDetailOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)e.currentTarget.classList.remove('active')});
@@ -1037,7 +1082,6 @@ $('assignOverlay').addEventListener('click',function(e){if(e.target===e.currentT
 /* FILTERS + SEARCH */
 $('filterBar').addEventListener('click',function(e){var b=e.target.closest('.filter-btn');if(!b)return;document.querySelectorAll('.filter-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.filter=b.dataset.filter;renderLib()});
 $('sortSelect').addEventListener('change',function(e){S.sort=e.target.value;renderLib()});
-/* Search FAB */
 $('fabSearch').addEventListener('click',function(){$('searchOverlay').classList.add('active');$('searchInput').focus()});
 $('searchClose').addEventListener('click',function(){$('searchInput').value='';S.search='';renderLib();$('searchOverlay').classList.remove('active')});
 $('searchInput').addEventListener('input',function(e){S.search=e.target.value;renderLib()});
@@ -1050,14 +1094,14 @@ function delColl(id){confirm2('Supprimer','Supprimer cette collection ?',functio
 function viewColl(id){S.viewColl=id;var c=S.colls.find(function(x){return x.id===id});$('collMainView').style.display='none';$('collDetailView').style.display='block';$('collDetailTitle').textContent=c?c.name:'';var bks=S.books.filter(function(b){return b.collectionId===id}),g=$('collDetailGrid');if(!bks.length){g.innerHTML='<div class="empty-state"><p>Aucun livre ici.</p></div>';return}g.innerHTML=bks.map(function(bk){return'<div class="book-card" data-id="'+bk.id+'"><div class="book-cover-wrap"><img class="book-cover" src="'+(bk.cover||PH)+'" alt="" loading="lazy">'+(bk.favorite?'<span class="book-fav">\u2B50</span>':'')+'</div><div class="book-info"><div class="book-title">'+bk.title+'</div><div class="book-cat">'+bk.category+'</div></div></div>'}).join('');g.querySelectorAll('.book-card').forEach(function(card){card.addEventListener('click',function(){showDetail(parseInt(card.dataset.id))})})}
 $('collBackBtn').addEventListener('click',function(){$('collMainView').style.display='block';$('collDetailView').style.display='none';S.viewColl=null});
 
-/* === READER === */
+/* ===== READER ===== */
 function openReader(bookId){
   var bk=S.books.find(function(b){return b.id===bookId});if(!bk)return;
   $('bookDetailOverlay').classList.remove('active');showLd('Ouverture...');
-  dGet('bookFiles',bookId).then(function(fr){
+  loadFile(bookId).then(function(fr){
     if(!fr){hideLd();toast('Fichier introuvable');return}
     var pagesP;
-    // Direct pages format (extracted CBR/CB7)
+    /* Legacy: extracted CBR pages stored as {pages:[{data,type},...]} */
     if(fr.pages&&fr.pages.length){
       var directPages=[];
       fr.pages.forEach(function(p){
@@ -1069,32 +1113,17 @@ function openReader(bookId){
       pagesP=withTimeout(parsePDFPages(fr.data),30000,'PDF trop volumineux (timeout 30s)');
     }else if(bk.fileType==='epub'){
       pagesP=parseEPUBPages(fr.data);
+    }else if(bk.fileType==='cbr'){
+      /* H5: CBR stored as raw buffer, extract on-the-fly */
+      $('loadingText').textContent='Extraction en cours...';
+      pagesP=parseCBRPages(fr.data,(bk.title||'book')+'.cbr');
     }else{
-      // Try ZIP (CBZ), fallback to libarchive
+      /* CBZ or unknown — try ZIP first, fallback libarchive */
       pagesP=parseCBZPages(fr.data).catch(function(zipErr){
         log('INFO','ZIP failed:',zipErr.message,', trying libarchive...');
-        if(!S.archReady||!S.Arch){
-          return Promise.reject(new Error('Module CBR non charg\u00e9'));
-        }
-        showLd('Extraction en cours...');
-        var file=new File([fr.data],(bk.title||'book')+'.'+(bk.fileType||'cbr'));
-        return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
-          S.debugLog='Extracted tree:\n';
-          var dbg=[];
-          function debugTree(obj,depth){if(!obj||typeof obj!=='object'||depth>5)return;Object.keys(obj).forEach(function(k){var v=obj[k];var t=v===null?'null':v instanceof File?'File':v instanceof Blob?'Blob':Array.isArray(v)?'Array':typeof v;var s=v&&v.size?v.size:0;dbg.push(new Array(depth+1).join('  ')+k+' ['+t+(s?', '+s+'b':'')+']');if(t==='object')debugTree(v,depth+1)})}
-          debugTree(extracted,0);
-          S.debugLog+=dbg.join('\n');
-
-          var images=[];
-          function walk(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&isImg(name)){images.push({path:full,file:val instanceof Blob||val instanceof File?val:new Blob([val])})}else if(val&&typeof val==='object'){walk(val,full)}})}
-          walk(extracted,'');
-          S.debugLog+='\nImages found: '+images.length;
-          if(!images.length)throw new Error('Aucune image. Debug dans Param\u00e8tres');
-          images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
-          var pages=[];
-          images.forEach(function(img){pages.push({type:'image',url:URL.createObjectURL(img.file)})});
-          return pages;
-        });
+        if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non charg\u00e9'));
+        $('loadingText').textContent='Extraction en cours...';
+        return parseCBRPages(fr.data,(bk.title||'book')+'.'+(bk.fileType||'cbr'));
       });
     }
     return pagesP.then(function(pages){S.rPages=pages;S.rBook=bk;S.rPage=bk.currentPage||0;S.rDir=bk.category==='Manga'?'rtl':S.dDir;S.rMode=S.dMode;S.rScale=1;S.rTx=0;S.rTy=0;S.rFS=false;bk.status='reading';bk.lastRead=Date.now();return dPut('books',bk)}).then(function(){
@@ -1102,7 +1131,6 @@ function openReader(bookId){
       document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('active',b.dataset.mode===S.rMode)});
       document.querySelectorAll('[data-dir]').forEach(function(b){b.classList.toggle('active',b.dataset.dir===S.rDir)});
       $('readerView').classList.add('active');$('appHeader').classList.add('hidden');$('bottomNav').classList.add('hidden');$('fabAdd').style.display='none';
-      // Show TOC button for EPUB or PDF with bookmarks
       var hasHtml=S.rPages.some(function(p){return p.type==='html'});
       var hasPdfToc=S.rPages.pdfToc&&S.rPages.pdfToc.length>0;
       $('readerTocBtn').style.display=(hasHtml||hasPdfToc)?'flex':'none';
@@ -1110,23 +1138,16 @@ function openReader(bookId){
       if(hasHtml)applyEpubTheme();
       if(hasHtml){
         var tocHtml='';
-        S.rPages.forEach(function(p,i){
-          if(p.type==='html'&&p.title){
-            tocHtml+='<button class="epub-toc-item" data-toc-page="'+i+'"><span>'+p.title+'</span><span class="toc-page">'+(i+1)+'</span></button>';
-          }
-        });
+        S.rPages.forEach(function(p,i){if(p.type==='html'&&p.title){tocHtml+='<button class="epub-toc-item" data-toc-page="'+i+'"><span>'+p.title+'</span><span class="toc-page">'+(i+1)+'</span></button>'}});
         $('epubTocList').innerHTML=tocHtml||'<div style="padding:16px;color:rgba(255,255,255,0.4);font-size:13px">Aucun chapitre d\u00e9tect\u00e9</div>';
       }else if(hasPdfToc){
         var tocHtml2='';
-        S.rPages.pdfToc.forEach(function(t){
-          var indent=t.depth>0?'padding-left:'+(16+t.depth*16)+'px':'';
-          tocHtml2+='<button class="epub-toc-item" data-toc-page="'+t.page+'" style="'+indent+'"><span>'+t.title+'</span><span class="toc-page">'+(t.page+1)+'</span></button>';
-        });
+        S.rPages.pdfToc.forEach(function(t){var indent=t.depth>0?'padding-left:'+(16+t.depth*16)+'px':'';tocHtml2+='<button class="epub-toc-item" data-toc-page="'+t.page+'" style="'+indent+'"><span>'+t.title+'</span><span class="toc-page">'+(t.page+1)+'</span></button>'});
         $('epubTocList').innerHTML=tocHtml2;
       }
       hideLd();renderPage();initRTouch()
     })
-  }).catch(function(err){hideLd();log('ERR','Read error:',err);log('ERR','Lecture: '+(err&&err.message?err.message:String(err)));toast('Erreur: '+(err&&err.message?err.message:String(err)))})
+  }).catch(function(err){hideLd();log('ERR','Lecture: '+(err&&err.message?err.message:String(err)));toast('Erreur: '+(err&&err.message?err.message:String(err)))})
 }
 
 function renderPage(){
@@ -1142,7 +1163,6 @@ function renderPage(){
   if(pg.type==='html'){
     hc.innerHTML=pg.content;hw.style.display='block';hw.scrollTop=0;
     cont.classList.remove('double-page');
-    // Enable EPUB chapter navigation links
     hc.querySelectorAll('[data-epub-page]').forEach(function(link){
       link.addEventListener('click',function(e){
         e.preventDefault();
@@ -1231,7 +1251,7 @@ document.querySelectorAll('.rs-theme-btn').forEach(function(b){b.addEventListene
 document.querySelectorAll('.rs-font-btn').forEach(function(b){b.addEventListener('click',function(){S.epubFont=b.dataset.font;localStorage.setItem('hr_epubFont',S.epubFont);applyEpubTheme()})});
 var onOr=function(){if(S.rBook)setTimeout(renderPage,200)};window.addEventListener('orientationchange',onOr);try{window.matchMedia('(orientation:landscape)').addEventListener('change',onOr)}catch(e){}
 
-/* SETTINGS */
+/* ===== SETTINGS ===== */
 var tgl=$('toggleTheme');
 tgl.addEventListener('click',function(){S.theme=S.theme==='light'?'dark':'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');localStorage.setItem('hr_theme',S.theme)});
 $('gridSizeSelect').addEventListener('change',function(e){S.gs=e.target.value;document.documentElement.style.setProperty('--grid-size',S.gs+'px');localStorage.setItem('hr_gs',S.gs)});
@@ -1248,11 +1268,29 @@ $('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.upda
 $('refreshBtn').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Biblioth\u00e8que actualis\u00e9e !')})});
 $('debugBtn').addEventListener('click',function(){downloadLog();toast('Journal t\u00e9l\u00e9charg\u00e9 !')});
 $('clearCacheBtn').addEventListener('click',function(){caches.keys().then(function(names){return Promise.all(names.map(function(n){return caches.delete(n)}))}).then(function(){toast('Cache effac\u00e9 !')}).catch(function(){toast('Erreur lors de la suppression du cache')})});
-$('clearDataBtn').addEventListener('click',function(){confirm2('Effacer les donn\u00e9es','Tous les livres et collections seront supprim\u00e9s. Cette action est irr\u00e9versible.',function(){if(S.db){S.db.close();S.db=null}var r=indexedDB.deleteDatabase('HomeReaderDB');r.onsuccess=function(){S.books=[];S.colls=[];renderLib();renderColls();renderResume();uStorage();toast('Donn\u00e9es effac\u00e9es !');openDB()};r.onerror=function(){toast('Erreur lors de la suppression')}})});
+$('clearDataBtn').addEventListener('click',function(){confirm2('Effacer les donn\u00e9es','Tous les livres et collections seront supprim\u00e9s. Cette action est irr\u00e9versible.',function(){
+  clearOPFS().then(function(){
+    if(S.db){S.db.close();S.db=null}
+    var r=indexedDB.deleteDatabase('HomeReaderDB');
+    r.onsuccess=function(){S.books=[];S.colls=[];renderLib();renderColls();renderResume();uStorage();toast('Donn\u00e9es effac\u00e9es !');openDB()};
+    r.onerror=function(){toast('Erreur lors de la suppression')}
+  })
+})});
 
-/* INIT */
+/* ===== INIT ===== */
 uClock();setInterval(uClock,30000);uBat();loadSet();
-openDB().then(function(){return loadBooks()}).then(function(){return loadColls()}).then(function(){initArch();initSW();log('INFO','v'+VER+' ready')}).catch(function(err){log('ERR','init: '+(err.message||err));toast('Erreur de d\u00e9marrage')});
+initOPFS().then(function(){
+  return openDB()
+}).then(function(){
+  return loadBooks()
+}).then(function(){
+  return loadColls()
+}).then(function(){
+  initArch();initSW();updStorageEngine();
+  log('INFO','v'+VER+' ready | OPFS='+S.useOPFS)
+}).catch(function(err){
+  log('ERR','init: '+(err.message||err));toast('Erreur de d\u00e9marrage')
+});
 </script>
 </body>
 </html>
