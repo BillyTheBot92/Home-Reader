@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1a1a2e">
 <title>HOME READER</title>
 <link rel="manifest" href="manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Noto+Serif:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -422,6 +422,38 @@ body {
 .reader-html-content div { margin: 4px 0; }
 /* EPUB TOC panel */
 .epub-toc-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 80vw; background: rgba(15,15,25,0.97); z-index: 170; transform: translateX(-100%); transition: transform 0.3s; display: flex; flex-direction: column; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+/* EPUB Reading Themes */
+.reader-html-wrap.epub-jour { background: #fff; }
+.reader-html-wrap.epub-jour .reader-html-content { color: #1a1a1a; }
+.reader-html-wrap.epub-jour .reader-html-content h1,.reader-html-wrap.epub-jour .reader-html-content h2,.reader-html-wrap.epub-jour .reader-html-content h3 { color: #111; }
+.reader-html-wrap.epub-sepia { background: #f4e8d1; }
+.reader-html-wrap.epub-sepia .reader-html-content { color: #5b4636; }
+.reader-html-wrap.epub-sepia .reader-html-content h1,.reader-html-wrap.epub-sepia .reader-html-content h2,.reader-html-wrap.epub-sepia .reader-html-content h3 { color: #3e2c1c; }
+.reader-html-wrap.epub-sepia .reader-html-content a { color: #8b6914; }
+.reader-html-wrap.epub-nuit { background: #000; }
+.reader-html-wrap.epub-nuit .reader-html-content { color: #e8e8f0; }
+.reader-html-wrap.epub-nuit .reader-html-content h1,.reader-html-wrap.epub-nuit .reader-html-content h2,.reader-html-wrap.epub-nuit .reader-html-content h3 { color: #fff; }
+.reader-html-wrap.epub-penombre { background: #2a2a2f; }
+.reader-html-wrap.epub-penombre .reader-html-content { color: #c8c8d0; }
+.reader-html-wrap.epub-penombre .reader-html-content h1,.reader-html-wrap.epub-penombre .reader-html-content h2,.reader-html-wrap.epub-penombre .reader-html-content h3 { color: #e0e0e8; }
+.reader-html-wrap.epub-cyber { background: #0a0a1a; }
+.reader-html-wrap.epub-cyber .reader-html-content { color: #00f0ff; font-family: 'Courier New', monospace; }
+.reader-html-wrap.epub-cyber .reader-html-content h1,.reader-html-wrap.epub-cyber .reader-html-content h2,.reader-html-wrap.epub-cyber .reader-html-content h3 { color: #ff2d95; text-shadow: 0 0 8px rgba(255,45,149,0.4); }
+.reader-html-wrap.epub-cyber .reader-html-content a { color: #ff2d95; }
+.reader-html-wrap.epub-cyber .reader-html-content blockquote { border-left-color: #ff2d95; }
+/* Theme/Font selector buttons */
+.rs-themes { display: flex; gap: 6px; flex-wrap: wrap; }
+.rs-theme-btn { width: 40px; height: 40px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.15); cursor: pointer; position: relative; transition: all 0.2s; }
+.rs-theme-btn.active { border-color: var(--accent); box-shadow: 0 0 8px rgba(74,158,255,0.3); }
+.rs-theme-btn[data-theme="jour"] { background: #fff; }
+.rs-theme-btn[data-theme="sepia"] { background: #f4e8d1; }
+.rs-theme-btn[data-theme="nuit"] { background: #111; }
+.rs-theme-btn[data-theme="penombre"] { background: #2a2a2f; }
+.rs-theme-btn[data-theme="cyber"] { background: linear-gradient(135deg, #0a0a1a, #1a0030); box-shadow: inset 0 0 8px rgba(0,240,255,0.2); }
+.rs-font-btn { flex: 1; padding: 6px 4px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.15); background: transparent; color: #fff; font-size: 11px; cursor: pointer; text-align: center; transition: all 0.2s; }
+.rs-font-btn.active { border-color: var(--accent); background: rgba(74,158,255,0.15); }
+.rs-epub-options { display: none; flex-direction: column; gap: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; margin-top: 4px; }
+.rs-epub-options.show { display: flex; }
 .epub-toc-panel.active { transform: translateX(0); }
 .epub-toc-header { padding: 16px; padding-top: calc(16px + var(--safe-top)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .epub-toc-header h3 { color: #fff; font-size: 15px; font-weight: 700; margin: 0; }
@@ -584,6 +616,23 @@ body {
     <div class="rs-modes"><button class="rs-mode-btn active" data-mode="single">Simple</button><button class="rs-mode-btn" data-mode="double">Double</button><button class="rs-mode-btn" data-mode="vertical">Vertical</button></div>
     <div class="rs-label">Sens de lecture</div>
     <div class="rs-modes"><button class="rs-mode-btn active" data-dir="ltr">G &#8594; D</button><button class="rs-mode-btn" data-dir="rtl">D &#8594; G</button></div>
+    <div class="rs-epub-options" id="rsEpubOptions">
+      <div class="rs-label">Th&#232;me de lecture</div>
+      <div class="rs-themes">
+        <button class="rs-theme-btn" data-theme="jour" title="Jour"></button>
+        <button class="rs-theme-btn" data-theme="sepia" title="S&#233;pia"></button>
+        <button class="rs-theme-btn active" data-theme="nuit" title="Nuit"></button>
+        <button class="rs-theme-btn" data-theme="penombre" title="P&#233;nombre"></button>
+        <button class="rs-theme-btn" data-theme="cyber" title="Cyberpunk"></button>
+      </div>
+      <div class="rs-label">Police</div>
+      <div class="rs-modes">
+        <button class="rs-font-btn active" data-font="Inter" style="font-family:Inter">Inter</button>
+        <button class="rs-font-btn" data-font="Merriweather" style="font-family:Merriweather,serif">Merri.</button>
+        <button class="rs-font-btn" data-font="Noto Serif" style="font-family:'Noto Serif',serif">Noto</button>
+        <button class="rs-font-btn" data-font="Roboto" style="font-family:Roboto,sans-serif">Roboto</button>
+      </div>
+    </div>
   </div>
   <div class="reader-content-area" id="readerContentArea">
     <div id="readerContent">
@@ -644,7 +693,7 @@ if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https:/
 var S={db:null,books:[],colls:[],filter:'all',sort:'recent',search:'',pFiles:null,pCat:null,
 rBook:null,rPages:[],rPage:0,rMode:'single',rDir:'ltr',rFS:false,rScale:1,rTx:0,rTy:0,
 tSX:0,tSY:0,tST:0,lastTap:0,pinchD:0,pinchS:1,pinching:false,panning:false,panX:0,panY:0,
-theme:'light',gs:'110',dDir:'ltr',dMode:'single',bri:100,archReady:false,Arch:null,viewColl:null,rAC:null};
+theme:'light',gs:'110',dDir:'ltr',dMode:'single',bri:100,epubTheme:'nuit',epubFont:'Inter',archReady:false,Arch:null,viewColl:null,rAC:null};
 
 function $(id){return document.getElementById(id)}
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
@@ -1056,6 +1105,8 @@ function openReader(bookId){
       var hasHtml=S.rPages.some(function(p){return p.type==='html'});
       var hasPdfToc=S.rPages.pdfToc&&S.rPages.pdfToc.length>0;
       $('readerTocBtn').style.display=(hasHtml||hasPdfToc)?'flex':'none';
+      $('rsEpubOptions').classList.toggle('show',hasHtml);
+      if(hasHtml)applyEpubTheme();
       if(hasHtml){
         var tocHtml='';
         S.rPages.forEach(function(p,i){
@@ -1161,7 +1212,7 @@ function goNext(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rM
 function goPrev(){var isLand=window.innerWidth>window.innerHeight;var step=(S.rMode==='double'||(S.rMode==='single'&&isLand))?2:1;if(S.rPage-step>=0){S.rPage-=step;renderPage()}else if(S.rPage>0){S.rPage=0;renderPage()}}
 $('readerSlider').addEventListener('input',function(e){S.rPage=parseInt(e.target.value)-1;renderPage()});
 $('readerBack').addEventListener('click',closeReader);
-function closeReader(){S.rPages.forEach(function(p){if(p.type==='image'&&p.url&&p.url.indexOf('blob:')===0)URL.revokeObjectURL(p.url)});S.rPages=[];S.rBook=null;if(S.rAC)S.rAC.abort();$('readerView').classList.remove('active');$('appHeader').classList.remove('hidden');$('bottomNav').classList.remove('hidden');$('fabAdd').style.display='flex';$('readerSettingsPanel').classList.remove('active');$('readerContent').style.transform='';$('readerContentArea').style.filter='';$('readerHtmlWrap').style.display='none';$('readerHtmlContent').innerHTML='';$('epubTocPanel').classList.remove('active');$('epubTocOverlay').classList.remove('active');$('readerTocBtn').style.display='none';loadBooks()}
+function closeReader(){S.rPages.forEach(function(p){if(p.type==='image'&&p.url&&p.url.indexOf('blob:')===0)URL.revokeObjectURL(p.url)});S.rPages=[];S.rBook=null;if(S.rAC)S.rAC.abort();$('readerView').classList.remove('active');$('appHeader').classList.remove('hidden');$('bottomNav').classList.remove('hidden');$('fabAdd').style.display='flex';$('readerSettingsPanel').classList.remove('active');$('readerContent').style.transform='';$('readerContentArea').style.filter='';$('readerHtmlWrap').style.display='none';$('readerHtmlContent').innerHTML='';$('epubTocPanel').classList.remove('active');$('epubTocOverlay').classList.remove('active');$('readerTocBtn').style.display='none';$('rsEpubOptions').classList.remove('show');loadBooks()}
 $('readerSettingsBtn').addEventListener('click',function(){$('readerSettingsPanel').classList.toggle('active')});
 /* EPUB TOC */
 function openToc(){$('epubTocOverlay').classList.add('active');$('epubTocPanel').classList.add('active');$('epubTocList').querySelectorAll('.epub-toc-item').forEach(function(it){it.classList.toggle('current',parseInt(it.dataset.tocPage)===S.rPage)});$('readerSettingsPanel').classList.remove('active')}
@@ -1173,6 +1224,10 @@ $('epubTocList').addEventListener('click',function(e){var btn=e.target.closest('
 document.querySelectorAll('[data-mode]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-mode]').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.rMode=b.dataset.mode;renderPage()})});
 document.querySelectorAll('[data-dir]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-dir]').forEach(function(x){x.classList.remove('active')});b.classList.add('active');S.rDir=b.dataset.dir;$('readerSlider').style.direction=S.rDir;renderPage()})});
 $('brightnessSlider').addEventListener('input',function(e){S.bri=parseInt(e.target.value);$('readerContentArea').style.filter='brightness('+S.bri+'%)'});
+/* EPUB Theme + Font */
+function applyEpubTheme(){var hw=$('readerHtmlWrap');hw.className='reader-html-wrap epub-'+S.epubTheme;$('readerHtmlContent').style.fontFamily=S.epubFont==='Inter'?"'Inter',sans-serif":S.epubFont==='Merriweather'?"'Merriweather',serif":S.epubFont==='Noto Serif'?"'Noto Serif',serif":"'Roboto',sans-serif";document.querySelectorAll('.rs-theme-btn').forEach(function(b){b.classList.toggle('active',b.dataset.theme===S.epubTheme)});document.querySelectorAll('.rs-font-btn').forEach(function(b){b.classList.toggle('active',b.dataset.font===S.epubFont)})}
+document.querySelectorAll('.rs-theme-btn').forEach(function(b){b.addEventListener('click',function(){S.epubTheme=b.dataset.theme;localStorage.setItem('hr_epubTheme',S.epubTheme);applyEpubTheme()})});
+document.querySelectorAll('.rs-font-btn').forEach(function(b){b.addEventListener('click',function(){S.epubFont=b.dataset.font;localStorage.setItem('hr_epubFont',S.epubFont);applyEpubTheme()})});
 var onOr=function(){if(S.rBook)setTimeout(renderPage,200)};window.addEventListener('orientationchange',onOr);try{window.matchMedia('(orientation:landscape)').addEventListener('change',onOr)}catch(e){}
 
 /* SETTINGS */
@@ -1182,7 +1237,7 @@ $('gridSizeSelect').addEventListener('change',function(e){S.gs=e.target.value;do
 $('defaultDirection').addEventListener('change',function(e){S.dDir=e.target.value;localStorage.setItem('hr_dDir',S.dDir)});
 $('defaultMode').addEventListener('change',function(e){S.dMode=e.target.value;localStorage.setItem('hr_dMode',S.dMode)});
 function uStorage(){try{if('estimate' in navigator.storage)navigator.storage.estimate().then(function(e){$('storageInfo').textContent=(e.usage/(1024*1024)).toFixed(1)+' Mo';$('storageFill').style.width=((e.usage/e.quota)*100).toFixed(1)+'%'})}catch(e){}}
-function loadSet(){S.theme=localStorage.getItem('hr_theme')||'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');S.gs=localStorage.getItem('hr_gs')||'110';document.documentElement.style.setProperty('--grid-size',S.gs+'px');$('gridSizeSelect').value=S.gs;S.dDir=localStorage.getItem('hr_dDir')||'ltr';$('defaultDirection').value=S.dDir;S.dMode=localStorage.getItem('hr_dMode')||'single';$('defaultMode').value=S.dMode}
+function loadSet(){S.theme=localStorage.getItem('hr_theme')||'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');S.gs=localStorage.getItem('hr_gs')||'110';document.documentElement.style.setProperty('--grid-size',S.gs+'px');$('gridSizeSelect').value=S.gs;S.dDir=localStorage.getItem('hr_dDir')||'ltr';$('defaultDirection').value=S.dDir;S.dMode=localStorage.getItem('hr_dMode')||'single';$('defaultMode').value=S.dMode;S.epubTheme=localStorage.getItem('hr_epubTheme')||'nuit';S.epubFont=localStorage.getItem('hr_epubFont')||'Inter'}
 
 /* SW + AUTO UPDATE */
 function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(function(reg){S.swReg=reg;setInterval(function(){reg.update()},60000)}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
