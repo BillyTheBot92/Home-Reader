@@ -556,7 +556,7 @@ body {
       <div class="setting-row"><button class="setting-btn" id="clearCacheBtn">&#x1F5D1;&#xFE0F; Effacer le cache</button></div>
       <div class="setting-row"><button class="setting-btn danger-text" id="clearDataBtn">&#x26A0;&#xFE0F; Effacer les donn&#233;es</button></div>
       <div class="settings-section">&#192; propos</div>
-      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.6.0</span></div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v1.6.1</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
@@ -653,8 +653,8 @@ body {
 
 <script src="libarchive.js"></script>
 <script>
-/* HOME READER v1.6.0 — OPFS storage + CBR raw import */
-var VER='1.6.0';
+/* HOME READER v1.6.1 — Zero-buffer import: File/Blob passed directly, no arrayBuffer() at import */
+var VER='1.6.1';
 
 /* GLOBAL LOG SYSTEM */
 var LOG=[];
@@ -679,6 +679,7 @@ function downloadLog(){
   text+='Date: '+new Date().toLocaleString('fr-FR')+'\n';
   text+='UserAgent: '+navigator.userAgent+'\n';
   text+='archReady: '+S.archReady+' | archFailed: '+(S.archFailed||false)+'\n';
+  text+='OPFS: '+S.useOPFS+'\n';
   text+='OPFS: '+S.useOPFS+'\n';
   text+='Books: '+S.books.length+'\n';
   text+='='.repeat(50)+'\n\n';
@@ -705,10 +706,7 @@ function hideLd(){$('loadingOverlay').classList.remove('active')}
 function isImg(n){return/\.(jpe?g|png|gif|webp|bmp|avif)$/i.test(n)}
 function sortPaths(a){return a.slice().sort(function(x,y){var nx=x.replace(/\D/g,'').padStart(10,'0'),ny=y.replace(/\D/g,'').padStart(10,'0');return nx<ny?-1:nx>ny?1:x.localeCompare(y)})}
 function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onloadend=function(){r(fr.result)};fr.readAsDataURL(blob)})}
-function pad(v){return v<10?'0'+v:''+v}
 function withTimeout(p,ms,msg){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error(msg||'Timeout'))},ms)})])}
-function uClock(){}
-function uBat(){}
 
 /* LIBARCHIVE - LOCAL */
 function initArch(){
@@ -791,6 +789,15 @@ function loadFile(id){
         log('ERR','OPFS read failed:',e);return null
       })
     }
+    /* Legacy pages format (old CBR) */
+    if(fr.pages&&fr.pages.length)return fr;
+    /* IDB with Blob (v1.6.1) — convert to ArrayBuffer for reader */
+    if(fr.data instanceof Blob){
+      return fr.data.arrayBuffer().then(function(buf){
+        return{id:id,data:buf}
+      })
+    }
+    /* IDB with ArrayBuffer (v1.6.0) */
     return fr
   })
 }
@@ -821,7 +828,20 @@ document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('cl
 /* ===== PARSERS ===== */
 function parseCBZCover(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});if(!imgs.length)return{cover:null,total:0};var sorted=sortPaths(imgs.map(function(i){return i.path}));var first=imgs.find(function(i){return i.path===sorted[0]});return first.entry.async('blob').then(function(bl){return{cover:bl,total:imgs.length}})})}
 function parseCBZPages(buf){return JSZip.loadAsync(buf).then(function(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});var sorted=sortPaths(imgs.map(function(i){return i.path}));var chain=Promise.resolve([]);sorted.forEach(function(p){chain=chain.then(function(pages){var entry=imgs.find(function(i){return i.path===p});return entry.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain})}
-function parsePDFCover(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){return pdf.getPage(1).then(function(page){var dpr=window.devicePixelRatio||1;var vp=page.getViewport({scale:0.5*dpr});var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise.then(function(){return new Promise(function(r){c.toBlob(function(bl){r({cover:bl,total:pdf.numPages})},'image/jpeg',0.8)})})})})}
+function parsePDFCover(blob){
+  var url=URL.createObjectURL(blob);
+  return pdfjsLib.getDocument({url:url}).promise.then(function(pdf){
+    var numPages=pdf.numPages;
+    return pdf.getPage(1).then(function(page){
+      var dpr=window.devicePixelRatio||1;var vp=page.getViewport({scale:0.5*dpr});
+      var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise.then(function(){
+        pdf.destroy();URL.revokeObjectURL(url);
+        return new Promise(function(r){c.toBlob(function(bl){r({cover:bl,total:numPages})},'image/jpeg',0.8)})
+      })
+    })
+  }).catch(function(e){URL.revokeObjectURL(url);throw e})
+}
 function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){
   var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push({type:'pdf',pdfDoc:pdf,pageNum:i});
   return pdf.getOutline().then(function(outline){
@@ -947,9 +967,8 @@ function parseEPUBPages(buf){return JSZip.loadAsync(buf).then(function(zip){
 function fallbackEPUBImages(zip){var imgs=[];zip.forEach(function(p,e){if(!e.dir&&isImg(p))imgs.push({path:p,entry:e})});imgs.sort(function(a,b){return a.path.localeCompare(b.path)});var chain=Promise.resolve([]);imgs.forEach(function(f){chain=chain.then(function(pages){return f.entry.async('blob').then(function(bl){pages.push({type:'image',url:URL.createObjectURL(bl)});return pages})})});return chain}
 
 /* ===== CBR PARSERS (H5 — cover-only import + on-the-fly reading) ===== */
-function parseCBRCover(buf,fname){
+function parseCBRCover(file){
   if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non disponible'));
-  var file=new File([buf],fname||'book.cbr');
   var archRef;
   return S.Arch.open(file).then(function(archive){
     archRef=archive;
@@ -1000,47 +1019,48 @@ $('importConfirm').addEventListener('click',function(){
   function next(){
     if(idx>=files.length){hideLd();if(count>0){toast(count+' livre(s) import\u00e9(s) !');loadBooks()}return}
     var file=files[idx++],ext=file.name.split('.').pop().toLowerCase();
-    file.arrayBuffer().then(function(buffer){
-      var coverP;
-      if(ext==='cbz'){
-        coverP=parseCBZCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}})
-      }else if(ext==='cbr'||ext==='cb7'){
-        coverP=parseCBZCover(buffer).then(function(r){
-          return{cover:r.cover,total:r.total,buf:buffer,st:'cbz'}
-        }).catch(function(){
-          if(!S.archReady){
-            if(S.archFailed)toast('Module CBR non disponible');
-            else toast('Module CBR en chargement, r\u00e9essayez');
-            return null
-          }
-          $('loadingText').textContent='Analyse '+ext.toUpperCase()+'...';
-          return parseCBRCover(buffer,file.name).then(function(result){
-            return{cover:result.cover,total:result.total,buf:buffer,st:'cbr'}
-          }).catch(function(e){
-            toast('Erreur: '+e.message);log('ERR',e.message||e);return null
-          })
-        })
-      }else if(ext==='pdf'){
-        coverP=withTimeout(parsePDFCover(buffer.slice(0)),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'pdf'}})
-      }else if(ext==='epub'){
-        coverP=parseEPUBCover(buffer).then(function(r){return{cover:r.cover,total:r.total,buf:buffer,st:'epub'}})
-      }else{toast('Format non reconnu: '+ext);next();return}
-      coverP.then(function(res){
-        if(!res){next();return}
-        var cvP2=res.cover?b64(res.cover):Promise.resolve(null);
-        var savedId;
-        cvP2.then(function(coverB64){
-          return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'})
-        }).then(function(bookId){
-          savedId=bookId;
-          return storeFile(bookId,res.buf)
-        }).then(function(){count++;next()}).catch(function(e){
-          log('ERR','Import store error:',e);
-          if(savedId)dDel('books',savedId).catch(function(){});
-          log('ERR','Import: '+(e.message||e));toast('Erreur: '+(e.message||e));next()
+    /* v1.6.1: NO file.arrayBuffer() — pass File directly to parsers and storage */
+    var coverP;
+    if(ext==='cbz'){
+      coverP=parseCBZCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'cbz'}})
+    }else if(ext==='cbr'||ext==='cb7'){
+      coverP=parseCBZCover(file).then(function(r){
+        return{cover:r.cover,total:r.total,blob:file,st:'cbz'}
+      }).catch(function(){
+        if(!S.archReady){
+          if(S.archFailed)toast('Module CBR non disponible');
+          else toast('Module CBR en chargement, r\u00e9essayez');
+          return null
+        }
+        $('loadingText').textContent='Analyse '+ext.toUpperCase()+'...';
+        return parseCBRCover(file).then(function(result){
+          return{cover:result.cover,total:result.total,blob:file,st:'cbr'}
+        }).catch(function(e){
+          toast('Erreur: '+e.message);log('ERR',e.message||e);return null
         })
       })
-    }).catch(function(e){log('ERR','Read error:',e);toast('Erreur: '+(e.message||e));next()})
+    }else if(ext==='pdf'){
+      coverP=withTimeout(parsePDFCover(file),30000,'PDF trop volumineux ou corrompu (timeout 30s)').then(function(r){
+        return{cover:r.cover,total:r.total,blob:file,st:'pdf'}
+      })
+    }else if(ext==='epub'){
+      coverP=parseEPUBCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'epub'}})
+    }else{toast('Format non reconnu: '+ext);next();return}
+    coverP.then(function(res){
+      if(!res){next();return}
+      var cvP2=res.cover?b64(res.cover):Promise.resolve(null);
+      var savedId;
+      cvP2.then(function(coverB64){
+        return dPut('books',{title:file.name.replace(/\.[^.]+$/,''),category:cat,cover:coverB64,fileType:res.st,totalPages:res.total,currentPage:0,favorite:false,collectionId:null,dateAdded:Date.now(),lastRead:null,status:'unread'})
+      }).then(function(bookId){
+        savedId=bookId;
+        return storeFile(bookId,res.blob)
+      }).then(function(){count++;next()}).catch(function(e){
+        log('ERR','Import store error:',e);
+        if(savedId)dDel('books',savedId).catch(function(){});
+        log('ERR','Import: '+(e.message||e));toast('Erreur: '+(e.message||e));next()
+      })
+    })
   }
   next()
 });
@@ -1278,7 +1298,7 @@ $('clearDataBtn').addEventListener('click',function(){confirm2('Effacer les donn
 })});
 
 /* ===== INIT ===== */
-uClock();setInterval(uClock,30000);uBat();loadSet();
+loadSet();
 initOPFS().then(function(){
   return openDB()
 }).then(function(){

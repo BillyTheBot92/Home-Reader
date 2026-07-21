@@ -1,4 +1,4 @@
-var CACHE_NAME = 'home-reader-v1.6.0';
+var CACHE_NAME = 'home-reader-v1.6.1';
 var ASSETS = [
   './',
   'home-reader.html',
