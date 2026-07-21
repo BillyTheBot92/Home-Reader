@@ -10,15 +10,15 @@
   "categories": ["books", "entertainment"],
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%231a1a2e' width='512' height='512' rx='80'/><text x='256' y='200' text-anchor='middle' font-size='120' fill='%234a9eff'>📚</text><text x='256' y='340' text-anchor='middle' font-size='60' font-family='Inter,sans-serif' font-weight='700' fill='white'>HOME</text><text x='256' y='400' text-anchor='middle' font-size='50' font-family='Inter,sans-serif' font-weight='700' fill='%234a9eff'>READER</text></svg>",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192' rx='30'/><text x='96' y='80' text-anchor='middle' font-size='50' fill='%234a9eff'>📚</text><text x='96' y='130' text-anchor='middle' font-size='22' font-family='Inter,sans-serif' font-weight='700' fill='white'>HOME</text><text x='96' y='155' text-anchor='middle' font-size='18' font-family='Inter,sans-serif' font-weight='700' fill='%234a9eff'>READER</text></svg>",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

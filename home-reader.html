@@ -512,6 +512,7 @@ body {
           <option value="recent">R&#233;cents</option>
           <option value="name">Nom A-Z</option>
           <option value="lastread">Derni&#232;re lecture</option>
+          <option value="progress">Progression</option>
         </select>
       </div>
     </div>
@@ -1002,7 +1003,7 @@ $('importConfirm').addEventListener('click',function(){
 
 /* LIBRARY */
 function loadBooks(){return dAll('books').then(function(b){S.books=b;renderLib();renderResume();uStorage()})}
-function filtered(){var b=S.books.slice(),f=S.filter;if(f==='BD'||f==='Manga'||f==='Autres')b=b.filter(function(x){return x.category===f});else if(f==='favorites')b=b.filter(function(x){return x.favorite});else if(f==='reading')b=b.filter(function(x){return x.status==='reading'});else if(f==='finished')b=b.filter(function(x){return x.status==='finished'});if(S.search){var q=S.search.toLowerCase();b=b.filter(function(x){return x.title.toLowerCase().indexOf(q)>=0})}if(S.sort==='name')b.sort(function(a,c){return a.title.localeCompare(c.title)});else if(S.sort==='lastread')b.sort(function(a,c){return(c.lastRead||0)-(a.lastRead||0)});else b.sort(function(a,c){return c.dateAdded-a.dateAdded});return b}
+function filtered(){var b=S.books.slice(),f=S.filter;if(f==='BD'||f==='Manga'||f==='Autres')b=b.filter(function(x){return x.category===f});else if(f==='favorites')b=b.filter(function(x){return x.favorite});else if(f==='reading')b=b.filter(function(x){return x.status==='reading'});else if(f==='finished')b=b.filter(function(x){return x.status==='finished'});if(S.search){var q=S.search.toLowerCase();b=b.filter(function(x){return x.title.toLowerCase().indexOf(q)>=0})}if(S.sort==='name')b.sort(function(a,c){return a.title.localeCompare(c.title)});else if(S.sort==='lastread')b.sort(function(a,c){return(c.lastRead||0)-(a.lastRead||0)});else if(S.sort==='progress')b.sort(function(a,c){var pa=a.totalPages?(a.currentPage/a.totalPages):0;var pc=c.totalPages?(c.currentPage/c.totalPages):0;return pc-pa});else b.sort(function(a,c){return c.dateAdded-a.dateAdded});return b}
 var PH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Crect fill='%23ddd' width='100' height='140'/%3E%3Ctext x='50' y='75' text-anchor='middle' fill='%23999' font-size='14'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E";
 function renderLib(){
   var g=$('bookGrid'),e=$('emptyState'),bks=filtered();
