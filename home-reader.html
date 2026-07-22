@@ -322,7 +322,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div class="settings-section">Import</div>
       <div class="setting-row"><span class="setting-label">&#x1F517; Importer par URL</span><button class="setting-btn" id="showUrlImport">Ouvrir</button></div>
       <div class="settings-section">&#192; propos</div>
-      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v2.0.0</span></div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v2.0.1</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
@@ -415,8 +415,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <input type="file" id="fileInput" accept=".cbz,.cbr,.pdf,.epub,.cb7" multiple style="display:none">
 <script src="libarchive.js"></script>
 <script>
-/* HOME READER v2.0.0 — Mini ZIP parser + prefetch reader + zero-dependency architecture */
-var VER='2.0.0';
+/* HOME READER v2.0.1 — Mini ZIP parser + prefetch reader + zero-dependency architecture */
+var VER='2.0.1';
 var LOG=[];
 function log(type){var args=[];for(var i=1;i<arguments.length;i++){var a=arguments[i];if(a===null)args.push('null');else if(a===undefined)args.push('undefined');else if(a instanceof Error)args.push(a.message||'Error');else if(typeof a==='object'){try{args.push(JSON.stringify(a).substring(0,300))}catch(e){args.push(String(a))}}else args.push(String(a))}var msg=args.join(' ');var ts=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});LOG.push('['+ts+'] '+type+': '+msg);if(LOG.length>500)LOG.shift()}
 window.addEventListener('error',function(e){log('GLOBAL',e.message,'at line',e.lineno)});
