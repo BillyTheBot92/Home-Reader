@@ -322,7 +322,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div class="settings-section">Import</div>
       <div class="setting-row"><span class="setting-label">&#x1F517; Importer par URL</span><button class="setting-btn" id="showUrlImport">Ouvrir</button></div>
       <div class="settings-section">&#192; propos</div>
-      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v2.0.1</span></div>
+      <div class="setting-row"><span class="setting-label">HOME READER</span><span class="setting-value">v2.0.2</span></div>
       <div class="setting-row"><span class="setting-label">Formats support&#233;s</span><span class="setting-value">CBZ, CBR, CB7, PDF, EPUB</span></div>
       <div class="setting-row"><span class="setting-label">Module CBR/CB7</span><span class="setting-value" id="cbrStatus">&#x23F3; Chargement...</span></div>
       <div class="setting-row"><button class="setting-btn" id="checkUpdateBtn">&#x1F504; V&#233;rifier les mises &#224; jour</button></div>
@@ -415,8 +415,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <input type="file" id="fileInput" accept=".cbz,.cbr,.pdf,.epub,.cb7" multiple style="display:none">
 <script src="libarchive.js"></script>
 <script>
-/* HOME READER v2.0.1 — Mini ZIP parser + prefetch reader + zero-dependency architecture */
-var VER='2.0.1';
+/* HOME READER v2.0.2 — Mini ZIP parser + prefetch reader + zero-dependency architecture */
+var VER='2.0.2';
 var LOG=[];
 function log(type){var args=[];for(var i=1;i<arguments.length;i++){var a=arguments[i];if(a===null)args.push('null');else if(a===undefined)args.push('undefined');else if(a instanceof Error)args.push(a.message||'Error');else if(typeof a==='object'){try{args.push(JSON.stringify(a).substring(0,300))}catch(e){args.push(String(a))}}else args.push(String(a))}var msg=args.join(' ');var ts=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});LOG.push('['+ts+'] '+type+': '+msg);if(LOG.length>500)LOG.shift()}
 window.addEventListener('error',function(e){log('GLOBAL',e.message,'at line',e.lineno)});
@@ -1115,7 +1115,7 @@ function uStorage(){try{if('estimate' in navigator.storage)navigator.storage.est
 function loadSet(){S.theme=localStorage.getItem('hr_theme')||'light';document.body.dataset.theme=S.theme;tgl.classList.toggle('on',S.theme==='dark');S.gs=localStorage.getItem('hr_gs')||'110';document.documentElement.style.setProperty('--grid-size',S.gs+'px');$('gridSizeSelect').value=S.gs;S.dDir=localStorage.getItem('hr_dDir')||'ltr';$('defaultDirection').value=S.dDir;S.dMode=localStorage.getItem('hr_dMode')||'single';$('defaultMode').value=S.dMode;S.epubTheme=localStorage.getItem('hr_epubTheme')||'nuit';S.epubFont=localStorage.getItem('hr_epubFont')||'Inter'}
 
 /* SW + H2: AUTO UPDATE AT STARTUP */
-function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(function(reg){S.swReg=reg;reg.update();setInterval(function(){reg.update()},60000)}).catch(function(){});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
+function initSW(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){S.swReg=reg;log('INFO','SW registered, state='+(reg.active?reg.active.state:'none'));reg.addEventListener('updatefound',function(){var nw=reg.installing;if(!nw)return;log('INFO','SW update found');nw.addEventListener('statechange',function(){if(nw.state==='activated'){log('INFO','SW activated');$('updateBanner').classList.add('show')}})});reg.update();setInterval(function(){reg.update()},60000)}).catch(function(e){log('ERR','SW register:',e)});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED')$('updateBanner').classList.add('show')})}
 $('updateBtn').addEventListener('click',function(){window.location.reload()});
 $('headerRefresh').addEventListener('click',function(){loadBooks().then(function(){return loadColls()}).then(function(){toast('Actualis\u00e9 !')})});
 $('checkUpdateBtn').addEventListener('click',function(){if(S.swReg){S.swReg.update().then(function(){toast('V\u00e9rification termin\u00e9e')}).catch(function(){toast('Erreur')})}else toast('Service Worker non disponible')});

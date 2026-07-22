@@ -1,4 +1,4 @@
-var CACHE='home-reader-v2.0.1';
+var CACHE='home-reader-v2.0.2';
 var FILES=['./','/','index.html','home-reader.html','manifest.json','libarchive.js','libarchive-worker.js','libarchive.wasm'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES)}).then(function(){return self.skipWaiting()}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE}).map(function(k){return caches.delete(k)}))}).then(function(){self.clients.matchAll().then(function(cls){cls.forEach(function(c){c.postMessage({type:'SW_UPDATED'})})});return self.clients.claim()}))});
