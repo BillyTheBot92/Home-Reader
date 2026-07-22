@@ -703,7 +703,7 @@ function prefetchRange(center){
 
 /* ===== IMPORT ===== */
 $('fabAdd').addEventListener('click',function(){$('fileInput').click()});
-$('fileInput').addEventListener('change',function(e){if(e.target.files.length>0){S.pFiles=Array.from(e.target.files).filter(isValidFile);if(!S.pFiles.length){toast('Aucun fichier compatible');e.target.value='';return}S.pCat=null;document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});$('importConfirm').disabled=true;$('importModal').classList.add('active')}e.target.value=''});
+$('fileInput').addEventListener('change',function(e){if(e.target.files.length>0){S.pFiles=Array.from(e.target.files).filter(function(f){return isValidFile(f.name)});if(!S.pFiles.length){toast('Aucun fichier compatible');e.target.value='';return}S.pCat=null;document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});$('importConfirm').disabled=true;$('importModal').classList.add('active')}e.target.value=''});
 document.querySelectorAll('.cat-option').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('selected')});b.classList.add('selected');S.pCat=b.dataset.cat;$('importConfirm').disabled=false})});
 $('importCancel').addEventListener('click',function(){$('importModal').classList.remove('active');S.pFiles=null});
 
