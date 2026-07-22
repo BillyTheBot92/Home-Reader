@@ -32,12 +32,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .nav-btn.active{color:var(--accent)}
 .nav-btn svg{width:24px;height:24px}
 .lib-toolbar{padding:12px 16px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
-.lib-resume{background:linear-gradient(135deg,var(--accent),#7c3aed);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border:none;width:100%;text-align:left;font-family:inherit}
+.lib-resume{background:linear-gradient(135deg,var(--accent),#7c3aed);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border:none;width:100%;text-align:left;font-family:inherit;overflow:hidden}
 .lib-resume img{width:40px;height:56px;object-fit:cover;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
 .lib-resume-info{flex:1;color:#fff}
 .lib-resume-title{font-size:13px;font-weight:600}
+.lib-resume-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-resume-sub{font-size:11px;opacity:0.8;margin-top:2px}
-.lib-resume-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.lib-resume-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap}
 .lib-filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .lib-filters::-webkit-scrollbar{display:none}
 .filter-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg-card);font-size:12px;font-weight:500;color:var(--text-sec);cursor:pointer;font-family:inherit;transition:all 0.2s;white-space:nowrap}
@@ -417,7 +418,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 /* HOME READER v2.0.0 — Mini ZIP parser + prefetch reader + zero-dependency architecture */
 var VER='2.0.0';
 var LOG=[];
-function log(type){var args=[];for(var i=1;i<arguments.length;i++){var a=arguments[i];if(a===null)args.push('null');else if(a===undefined)args.push('undefined');else if(a instanceof Error)args.push(a.message||'Error');else if(typeof a==='object'){try{args.push(JSON.stringify(a).substring(0,300))}catch(e){args.push(String(a))}}else args.push(String(a))}var msg=args.join(' ');var ts=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});LOG.push('['+ts+'] '+type+': '+msg);if(LOG.length>200)LOG.shift()}
+function log(type){var args=[];for(var i=1;i<arguments.length;i++){var a=arguments[i];if(a===null)args.push('null');else if(a===undefined)args.push('undefined');else if(a instanceof Error)args.push(a.message||'Error');else if(typeof a==='object'){try{args.push(JSON.stringify(a).substring(0,300))}catch(e){args.push(String(a))}}else args.push(String(a))}var msg=args.join(' ');var ts=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});LOG.push('['+ts+'] '+type+': '+msg);if(LOG.length>500)LOG.shift()}
 window.addEventListener('error',function(e){log('GLOBAL',e.message,'at line',e.lineno)});
 window.addEventListener('unhandledrejection',function(e){log('REJECT',e.reason&&e.reason.message?e.reason.message:String(e.reason))});
 function downloadLog(){var text='HOME READER v'+VER+' - Log\nDate: '+new Date().toLocaleString('fr-FR')+'\nUserAgent: '+navigator.userAgent+'\narchReady: '+S.archReady+' | archFailed: '+(S.archFailed||false)+'\nOPFS: '+S.useOPFS+'\nBooks: '+S.books.length+'\n'+'='.repeat(50)+'\n\n'+LOG.join('\n');var blob=new Blob([text],{type:'text/plain'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='home-reader-log.txt';a.click();URL.revokeObjectURL(a.href)}
@@ -453,10 +454,11 @@ function zipGetEntries(blob){
   return blob.slice(size-scanLen,size).arrayBuffer().then(function(eocdBuf){
     var view=new DataView(eocdBuf);var eocdOff=-1;
     for(var i=eocdBuf.byteLength-22;i>=0;i--){if(view.getUint32(i,true)===0x06054b50){eocdOff=i;break}}
-    if(eocdOff<0)throw new Error('Format ZIP invalide');
+    if(eocdOff<0)throw new Error('Format ZIP invalide (EOCD non trouv\u00e9, taille='+size+')');
     var cdOffset=view.getUint32(eocdOff+16,true);
     var cdSize=view.getUint32(eocdOff+12,true);
     var entryCount=view.getUint16(eocdOff+10,true);
+    log('DBG','ZIP: '+entryCount+' entries, CD@'+cdOffset+' size='+cdSize);
     return blob.slice(cdOffset,cdOffset+cdSize).arrayBuffer().then(function(cdBuf){
       var cdView=new DataView(cdBuf);var entries=[];var pos=0;
       for(var j=0;j<entryCount;j++){
@@ -588,13 +590,17 @@ function parseEPUBCover(blob){
     })
   })
 }
+function cbrIsImg(f){var n=(f.file&&f.file.name)||f.path||'';return isImg(n)}
 function parseCBRCover(file){
   if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non disponible'));
   var archRef;
   return S.Arch.open(file).then(function(archive){archRef=archive;return archive.getFilesArray()}).then(function(files){
-    var imgs=files.filter(function(f){return f.file&&isImg(f.file.name||'')});
+    log('DBG','CBR getFilesArray:',files.length,'files');
+    if(files.length>0)log('DBG','CBR first file: name='+(files[0].file&&files[0].file.name)+' path='+files[0].path);
+    var imgs=files.filter(cbrIsImg);
+    log('DBG','CBR images found:',imgs.length);
     if(!imgs.length){if(archRef)archRef.close();return{cover:null,total:0}}
-    imgs.sort(function(a,b){var pa=(a.path+a.file.name).replace(/\D/g,'').padStart(10,'0'),pb=(b.path+b.file.name).replace(/\D/g,'').padStart(10,'0');return pa<pb?-1:pa>pb?1:0});
+    imgs.sort(function(a,b){var na=(a.path||(a.file&&a.file.name)||'').replace(/\D/g,'').padStart(10,'0'),nb=(b.path||(b.file&&b.file.name)||'').replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:0});
     return imgs[0].file.extract().then(function(coverFile){if(archRef)archRef.close();var blob=coverFile instanceof Blob?coverFile:new Blob([coverFile]);return{cover:blob,total:imgs.length}})
   }).catch(function(e){if(archRef)try{archRef.close()}catch(x){}throw e})
 }
@@ -671,12 +677,23 @@ function parsePDFPages(buf){return pdfjsLib.getDocument({data:buf}).promise.then
 function parseCBRPages(buf,fname){
   if(!S.archReady||!S.Arch)return Promise.reject(new Error('Module CBR non disponible'));
   var file=new File([buf],fname||'book.cbr');
-  return S.Arch.open(file).then(function(archive){return archive.extractFiles()}).then(function(extracted){
-    var images=[];
-    function walk(obj,path){if(!obj||typeof obj!=='object')return;Object.keys(obj).forEach(function(name){var val=obj[name],full=path?path+'/'+name:name;if(val&&isImg(name))images.push({path:full,file:val instanceof Blob||val instanceof File?val:new Blob([val])});else if(val&&typeof val==='object')walk(val,full)})}
-    walk(extracted,'');if(!images.length)throw new Error('Aucune image trouv\u00e9e');
-    images.sort(function(a,b){var na=a.path.replace(/\D/g,'').padStart(10,'0'),nb=b.path.replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:a.path.localeCompare(b.path)});
-    var pages=[];images.forEach(function(img){pages.push({type:'image',url:URL.createObjectURL(img.file)})});return pages
+  return S.Arch.open(file).then(function(archive){return archive.getFilesArray()}).then(function(files){
+    log('DBG','CBR pages getFilesArray:',files.length,'files');
+    var imgs=files.filter(cbrIsImg);
+    log('DBG','CBR pages images:',imgs.length);
+    if(!imgs.length){
+      if(files.length>0){var sample=files.slice(0,5).map(function(f){return(f.path||'')+'|'+(f.file&&f.file.name||'')});log('DBG','CBR sample files:',sample)}
+      throw new Error('Aucune image trouv\u00e9e ('+files.length+' fichiers dans l\'archive)')
+    }
+    imgs.sort(function(a,b){var na=(a.path||(a.file&&a.file.name)||'').replace(/\D/g,'').padStart(10,'0'),nb=(b.path||(b.file&&b.file.name)||'').replace(/\D/g,'').padStart(10,'0');return na<nb?-1:na>nb?1:0});
+    var chain=Promise.resolve([]);
+    imgs.forEach(function(item){chain=chain.then(function(pages){
+      return item.file.extract().then(function(ef){
+        var blob=ef instanceof Blob?ef:new Blob([ef]);
+        pages.push({type:'image',url:URL.createObjectURL(blob)});return pages
+      })
+    })});
+    return chain
   })
 }
 
@@ -752,21 +769,23 @@ $('importConfirm').addEventListener('click',function(){
     }
     var file=files[idx++],ext=file.name.split('.').pop().toLowerCase();
     if(VALID_EXT.indexOf(ext)<0){skipped++;next();return}
+    log('DBG','Import:',file.name,'('+ext+', '+(file.size/1024/1024).toFixed(1)+'Mo)');
     var coverP;
     if(ext==='cbz'){
-      coverP=parseCBZCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'cbz'}})
+      coverP=parseCBZCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'cbz'}}).catch(function(e){log('ERR','CBZ cover fail ['+file.name+']:',e);return null})
     }else if(ext==='cbr'||ext==='cb7'){
-      coverP=parseCBZCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'cbz'}}).catch(function(){
+      coverP=parseCBZCover(file).then(function(r){log('DBG',file.name+' est un ZIP (pas RAR)');return{cover:r.cover,total:r.total,blob:file,st:'cbz'}}).catch(function(e){
+        log('DBG',file.name+' pas un ZIP:',e.message,', essai CBR...');
         if(!S.archReady){if(S.archFailed)toast('Module CBR non disponible');else toast('Module CBR en chargement');return null}
-        return parseCBRCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'cbr'}}).catch(function(e){log('ERR',e);return null})
+        return parseCBRCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'cbr'}}).catch(function(e2){log('ERR','CBR cover fail ['+file.name+']:',e2);return null})
       })
     }else if(ext==='pdf'){
-      coverP=withTimeout(parsePDFCover(file),30000,'PDF timeout 30s').then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'pdf'}})
+      coverP=withTimeout(parsePDFCover(file),30000,'PDF timeout 30s').then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'pdf'}}).catch(function(e){log('ERR','PDF cover fail ['+file.name+']:',e);return null})
     }else if(ext==='epub'){
-      coverP=parseEPUBCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'epub'}})
+      coverP=parseEPUBCover(file).then(function(r){return{cover:r.cover,total:r.total,blob:file,st:'epub'}}).catch(function(e){log('ERR','EPUB cover fail ['+file.name+']:',e);return null})
     }else{skipped++;next();return}
     coverP.then(function(res){
-      if(!res){skipped++;next();return}
+      if(!res){log('WARN','Skip ['+file.name+']: cover parse returned null');skipped++;next();return}
       var cvP2=res.cover?b64(res.cover):Promise.resolve(null);
       var savedId;
       cvP2.then(function(coverB64){
